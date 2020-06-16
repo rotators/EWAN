@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SFML.hpp"
+#include "Libs/SFML.hpp"
 
 #include <cstdint>
 #include <string>
@@ -94,7 +94,7 @@ namespace EWAN
         Cache<sf::Sprite>        Sprite;
         Cache<sf::Texture>       Texture;
 
-    // used by LoadDirectory() to guess
+    // used by LoadDirectory() to guess target Cache
     public:
         std::vector<std::string> FontExtensions;
         std::vector<std::string> SoundBufferExtensions;

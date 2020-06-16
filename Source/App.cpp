@@ -1,10 +1,12 @@
 #include "App.hpp"
 #include "Log.hpp"
 #include "Text.hpp"
+#include "Utils.hpp"
 
-#if __has_include("Embed.hpp")
- #include "Embed.hpp"
-#endif
+#include "Libs/JSON.hpp"
+
+#include <algorithm>
+#include <filesystem>
 
 #if __has_include(<format>)
  #include <format>
@@ -15,55 +17,132 @@ EWAN::App::App()
 
 EWAN::App::~App()
 {
-    Finish();
+    if(!Finished)
+        Finish();
 }
 
 void EWAN::App::Run()
 {
-    Log::Raw("BEGIN");
-
-    Init();
-
-    LoadContent();
-    MainLoop();
+    if(Init())
+        MainLoop();
+    else
+        Log::Raw("Initialization failed");
 
     Finish();
-
-    Log::Raw("END");
 }
 
-void EWAN::App::Init()
+bool EWAN::App::Init()
 {
-    sf::Clock timer;
-    Log::Raw("BEGIN");
+    Log::Raw("Init");
+    Finished = false;
 
-    #if __has_include("Embed.hpp")
-    InitEmbed(Content);
-    #endif
+    Log::Raw("GameInfo...");
+    if(!InitGameInfo())
+        return false;
 
-    Log::Raw("Window");
-    Window.Init(Content, Settings);
+    Log::Raw("Window...");
+    if(!Window.Init(Content, Settings))
+        return false;
 
-    #if __has_include(<format>)
-    Log::Raw(std::format("END {}ms", timer.getElapsedTime().asMilliseconds()));
-    #else
-    Log::Raw("END " + std::to_string(timer.getElapsedTime().asMilliseconds()) + "ms");
-    #endif
+    return true;
 }
 
 void EWAN::App::Finish()
 {
+    Log::Raw("Finish");
+    Finished = true;
+
+    Log::Raw("Window...");
     Window.Finish();
 
     if(Content.Size())
     {
-        Log::Raw("Content");
+        Log::Raw("Content...");
         Content.DeleteAll();
     }
 
     Content.FontExtensions.clear();
     Content.SoundBufferExtensions.clear();
     Content.TextureExtensions.clear();
+}
+
+//
+
+bool EWAN::App::InitGameInfo(const std::string& path /*= "." */, const std::string& id /*= std::string()*/)
+{
+    if(path.empty())
+    {
+        Log::Raw("Empty game path");
+        return false;
+    }
+    else if(!std::filesystem::exists(path))
+    {
+        Log::Raw("Game path does not exists");
+        return false;
+    }
+    else if(!std::filesystem::is_directory(path))
+    {
+        Log::Raw("Game path is not a directory");
+        return false;
+    }
+
+    std::vector<std::string> files;
+
+    for(const auto& file : std::filesystem::recursive_directory_iterator(path))
+    {
+        if(!std::filesystem::is_regular_file(file))
+            continue;
+
+        if(Text::ToLower(file.path().extension().string() ) != ".game")
+            continue;
+
+        files.emplace_back(std::filesystem::absolute(file.path()).make_preferred().string());
+
+        /*
+        scripts.push_back( file.path().string().substr( path.length(), file.path().string().length() - path.length() ) );
+        scripts.back().erase( 0, scripts.back().find_first_not_of( "\\/" ) );  // trim left
+        */
+    }
+
+    if(files.empty())
+    {
+        Log::Raw("GameInfo not found");
+        return false;
+    }
+
+    std::sort(files.begin(), files.end());
+
+    for(const auto& filename : files)
+    {
+        std::string gameName = GameInfo.Path = filename;
+
+        nl::json json;
+
+        if(JSON::ReadJSON(filename, json) && GameInfo.FromJSON(json))
+        {
+            gameName = GameInfo.Name + " -> " + gameName;
+
+            if(id.empty() || id == GameInfo.Name)
+            {
+                Log::Raw("GameInfo selected : " + gameName);
+                return true;
+            }
+
+            Log::Raw("GameInfo skipped : " + gameName);
+        }
+        else
+        {
+            if(!GameInfo.Name.empty())
+                gameName = GameInfo.Name + " -> " + gameName;
+            Log::Raw("GameInfo invalid : " + gameName);
+            GameInfo.Clear();
+        }
+    }
+
+    if(!id.empty())
+        Log::Raw("GameInfo not found : " + id);
+
+    return false;
 }
 
 bool EWAN::App::LoadContent() 
@@ -120,7 +199,7 @@ void EWAN::App::MainLoop()
 
 namespace EWAN
 {
-    // Compile time results of sizeof/alignof
+    // Compile time results of sizeof/alignof as errors :)
     template<typename T>
     void info()
     {

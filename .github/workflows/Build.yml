@@ -29,6 +29,7 @@ jobs:
     cfg:
     - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -10,  arch: 32, generator: Unix Makefiles,        app: EWAN }
     - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -10,  arch: 64, generator: Unix Makefiles,        app: EWAN }
+# clang really doesn't like Content class in its current form :(
 #BORKD{ os: ubuntu-latest, name: Clang,  cc: clang, cxx: clang++, ver: -9,   arch: 32, generator: Unix Makefiles,        app: EWAN }
 #BORKD{ os: ubuntu-latest, name: Clang,  cc: clang, cxx: clang++, ver: -9,   arch: 64, generator: Unix Makefiles,        app: EWAN }
     - { os: windows-2019,  name: VS2019, cc: cl,    cxx: cl,      ver: null, arch: 32, generator: Visual Studio 16 2019, app: Release/EWAN.exe }
@@ -85,7 +86,7 @@ jobs:
     run:  |
           :
           # [Linux] Toolchain file is used to compile 32bit targets on 64bit hosts
-          # NOTE: without proper 32@64 setup CMake can't find OpenGL libraries
+          # NOTE: without proper 32@64 toolchain setup CMake can't find OpenGL libraries
           if [[ "$RUNNER_OS" == "Linux" ]] && [[ ${{ matrix.cfg.arch }} -eq 32 ]]; then
              toolchain="-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchain/Linux32.cmake"
           fi

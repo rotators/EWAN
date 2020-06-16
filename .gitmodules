@@ -1,3 +1,7 @@
+[submodule "json"]
+	path = Libs/json
+	url = https://github.com/nlohmann/json.git
+	branch = master
 [submodule "SFML"]
 	path = Libs/SFML
 	url = https://github.com/SFML/SFML.git

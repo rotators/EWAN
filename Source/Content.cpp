@@ -213,7 +213,7 @@ bool EWAN::Content::Cache<T>::Exists(const std::string& id) const
 }
 
 template<typename T>
-T* EWAN::Content::Cache<T>::Get(const std::string& id, bool silent /* = false */) const
+T* EWAN::Content::Cache<T>::Get(const std::string& id, bool silent /*= false */) const
 {
     sf::Lock lock(CacheLock);
 

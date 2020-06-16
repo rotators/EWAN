@@ -1,31 +1,29 @@
 #pragma once
 
 #include "Content.hpp"
+#include "GameInfo.hpp"
 #include "Settings.hpp"
 #include "Window.hpp"
 
-#include "SFML.hpp"
+#include "Libs/SFML.hpp"
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace EWAN
 {
     class App
     {
     public:
-        #if __has_include("Embed.hpp")
-        static constexpr bool Embed = true;
-        #else
-        static constexpr bool Embed = false;
-        #endif
-
+        bool Finished = false;
         bool Quit = false;
-        uint8_t Unused0[3];
+        uint8_t Unused0[2];
 
         EWAN::Settings Settings;
 
         EWAN::Window    Window;
+        EWAN::GameInfo  GameInfo;
         EWAN::Content   Content;
 
     public:
@@ -33,12 +31,16 @@ namespace EWAN
         virtual ~App();
 
         void Run();
-        void Init();
+        bool Init();
         void Finish();
 
+        bool InitGameInfo(const std::string& path = ".", const std::string& id = std::string());
         bool LoadContent();
         void MainLoop();
         void ProcessEvents();
         void ProcessRender();
+
+        bool ReadFile(const std::string& filename, std::string& content);
+        bool ReadFile(const std::string& filename, std::vector<std::string>& lines);
     };
 }

@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Content.hpp"
-#include "Log.hpp"
-
 #include <cstdint>
 
 namespace EWAN
@@ -10,11 +7,5 @@ namespace EWAN
     namespace Embed
     {
 @EMBED_DATA@
-    }
-
-    inline static void InitEmbed(Content& content)
-    {
-        Log::Raw("Embed");
-@EMBED_INIT@
     }
 }

@@ -1,3 +1,4 @@
+#include "Embed.hpp"
 #include "Log.hpp"
 #include "Window.hpp"
 
@@ -13,12 +14,11 @@ EWAN::Window::Window(sf::VideoMode mode, const sf::String& title, sf::Uint32 sty
 
 //
 
-void EWAN::Window::Init([[maybe_unused]] const EWAN::Content& content, const EWAN::Settings& settings)
+bool EWAN::Window::Init(EWAN::Content& content, const EWAN::Settings& settings)
 {
-    #if __has_include("Embed.hpp")
-    FPS.Text.setFont(*content.Font.Get("*embed/iii/monospace-typewriter.ttf"));
+    content.Font.New("*embed/Window/FPS")->loadFromMemory(&Embed::Font::Monospace_Typewriter_ttf, Embed::Font::Monospace_Typewriter_ttf_l);
+    FPS.Text.setFont(*content.Font.Get("*embed/Window/FPS"));
     FPS.Text.setCharacterSize(14);
-    #endif
 
     sf::ContextSettings ctxSettings;
 
@@ -43,6 +43,8 @@ void EWAN::Window::Init([[maybe_unused]] const EWAN::Content& content, const EWA
         setSize(sf::Vector2u(desktop.width, desktop.height));
 
     Log::Raw("sf::Texture::getMaximumSize()=" + std::to_string(sf::Texture::getMaximumSize()));
+
+    return true;
 }
 
 void EWAN::Window::Finish()
@@ -117,13 +119,11 @@ void EWAN::Window::Render()
 
     // always last
 
-    #if __has_include("Embed.hpp")
-    //if(FPS.Visible)
+    if(FPS.Visible)
     {
         FPS.Text.setString(std::to_string(FPS.Min) + " " + std::to_string(FPS.Count) + " " + std::to_string(FPS.Max));
         draw(FPS.Text);
     }
-    #endif
 
     display();
 }
