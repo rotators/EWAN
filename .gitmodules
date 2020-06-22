@@ -1,3 +1,7 @@
+[submodule "AngelScript"]
+	path = Libs/AngelScript
+	url = https://github.com/codecat/angelscript-mirror.git
+	branch = master
 [submodule "json"]
 	path = Libs/json
 	url = https://github.com/nlohmann/json.git

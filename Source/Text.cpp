@@ -53,6 +53,23 @@ std::vector<std::string> EWAN::Text::Split(const std::string& text, const char& 
     return result;
 }
 
+std::string EWAN::Text::Join(const std::list<std::string>& text, const std::string& delimeter)
+{
+    static const std::string empty;
+    switch(text.size())
+    {
+        case 0:
+            return empty;
+        case 1:
+            return text.front();
+        default:
+            std::ostringstream oss;
+            std::copy( text.begin(), --text.end(), std::ostream_iterator<std::string>( oss, delimeter.c_str() ) );
+            oss << *text.rbegin();
+            return oss.str();
+    }
+}
+
 std::string EWAN::Text::Join(const std::vector<std::string>& text, const std::string& delimeter)
 {
     static const std::string empty;
@@ -65,7 +82,7 @@ std::string EWAN::Text::Join(const std::vector<std::string>& text, const std::st
             return text[0];
         default:
             std::ostringstream oss;
-            copy( text.begin(), text.end() - 1, std::ostream_iterator<std::string>( oss, delimeter.c_str() ) );
+            std::copy( text.begin(), --text.end(), std::ostream_iterator<std::string>( oss, delimeter.c_str() ) );
             oss << *text.rbegin();
             return oss.str();
     }
@@ -73,9 +90,22 @@ std::string EWAN::Text::Join(const std::vector<std::string>& text, const std::st
 
 std::string EWAN::Text::Trim(const std::string& text)
 {
+    return TrimLeft(TrimRight(text));
+}
+
+std::string EWAN::Text::TrimLeft(const std::string& text)
+{
     std::string result = text;
 
     result.erase(result.begin(), std::find_if( result.begin(), result.end(), [](int ch) { return !std::isspace(ch); }));
+
+    return result;
+}
+
+std::string EWAN::Text::TrimRight(const std::string& text)
+{
+    std::string result = text;
+
     result.erase(std::find_if(result.rbegin(), result.rend(), [](int ch) { return !std::isspace(ch); }).base(), result.end());
 
     return result;
