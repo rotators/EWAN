@@ -16,7 +16,6 @@ function( project_target_libraries target )
 
     target_include_directories( ${target} PRIVATE ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/AngelScript/sdk/angelscript/include )
     target_include_directories( ${target} PRIVATE ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/AngelScript/sdk/add_on )
-    target_compile_definitions( ${target} PRIVATE AS_USE_NAMESPACE )
 endfunction()
 
 ##
@@ -24,8 +23,8 @@ endfunction()
 ##
 
 add_subdirectory(AngelScript/sdk/angelscript/projects/cmake EXCLUDE_FROM_ALL)
-target_compile_definitions( ${ANGELSCRIPT_LIBRARY_NAME} PRIVATE AS_USE_NAMESPACE )
-other_target( ${ANGELSCRIPT_LIBRARY_NAME} )
+target_compile_definitions( ${ANGELSCRIPT_LIBRARY_NAME} PUBLIC AS_USE_NAMESPACE )
+##other_target( ${ANGELSCRIPT_LIBRARY_NAME} )
 if(CMAKE_COMPILER_IS_GNUCXX)
     # https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_lib.html#doc_compile_gnuc
     compiler_flag( "compile" angelscript -fno-strict-aliasing COMPILER_FLAG_FNO_STRICT_ALIASING )
@@ -46,8 +45,8 @@ target_sources( ${ANGELSCRIPT_LIBRARY_NAME}-addons
         AngelScript/sdk/add_on/scriptstdstring/scriptstdstring.h
         AngelScript/sdk/add_on/scriptstdstring/scriptstdstring_utils.cpp
 )
-target_compile_definitions( ${ANGELSCRIPT_LIBRARY_NAME}-addons PRIVATE AS_USE_NAMESPACE )
 target_include_directories( ${ANGELSCRIPT_LIBRARY_NAME}-addons PRIVATE ${CMAKE_CURRENT_LIST_DIR}/AngelScript/sdk/angelscript/include )
+target_link_libraries( ${ANGELSCRIPT_LIBRARY_NAME}-addons PRIVATE ${ANGELSCRIPT_LIBRARY_NAME} )
 other_target( ${ANGELSCRIPT_LIBRARY_NAME}-addons )
 
 ##

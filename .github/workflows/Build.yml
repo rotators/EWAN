@@ -102,7 +102,7 @@ jobs:
           fi
 
           cmake -B Build -G "${{ matrix.cfg.generator }}" $platform $toolchain 2>&1
-          cmake --build Build --config Release
+          cmake --build Build --config Release 2>&1
     env:
      CC:  ${{ matrix.cfg.cc }}${{ matrix.cfg.ver }}
      CXX: ${{ matrix.cfg.cxx }}${{ matrix.cfg.ver }}
