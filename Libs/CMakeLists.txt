@@ -5,6 +5,7 @@ include( CompileTarget )
 set( BUILD_SHARED_LIBS FALSE )
 
 function( project_target_libraries target )
+    target_link_libraries( ${target} PRIVATE ${ANGELSCRIPT_LIBRARY_NAME} ${ANGELSCRIPT_LIBRARY_NAME}-addons )
     target_link_libraries( ${target} PRIVATE nlohmann_json::nlohmann_json )
     target_link_libraries( ${target} PRIVATE sfml-audio sfml-graphics sfml-system sfml-window) # sfml-network
     foreach( lib IN ITEMS sfml-activity sfml-main )
@@ -12,7 +13,71 @@ function( project_target_libraries target )
             target_link_libraries( ${target} PRIVATE ${lib} )
         endif()
     endforeach()
+
+    target_include_directories( ${target} PRIVATE ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/AngelScript/sdk/angelscript/include )
+    target_include_directories( ${target} PRIVATE ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/AngelScript/sdk/add_on )
+    target_compile_definitions( ${target} PRIVATE AS_USE_NAMESPACE )
 endfunction()
+
+##
+## AngelScript
+##
+
+add_subdirectory(AngelScript/sdk/angelscript/projects/cmake EXCLUDE_FROM_ALL)
+target_compile_definitions( ${ANGELSCRIPT_LIBRARY_NAME} PRIVATE AS_USE_NAMESPACE )
+other_target( ${ANGELSCRIPT_LIBRARY_NAME} )
+if(CMAKE_COMPILER_IS_GNUCXX)
+    # https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_lib.html#doc_compile_gnuc
+    compiler_flag( "compile" angelscript -fno-strict-aliasing COMPILER_FLAG_FNO_STRICT_ALIASING )
+endif()
+
+##
+## AngelScript addons
+##
+
+add_library( ${ANGELSCRIPT_LIBRARY_NAME}-addons STATIC )
+target_sources( ${ANGELSCRIPT_LIBRARY_NAME}-addons
+    PRIVATE
+        AngelScript/sdk/add_on/scriptarray/scriptarray.cpp
+        AngelScript/sdk/add_on/scriptarray/scriptarray.h
+        AngelScript/sdk/add_on/scriptbuilder/scriptbuilder.cpp
+        AngelScript/sdk/add_on/scriptbuilder/scriptbuilder.h
+        AngelScript/sdk/add_on/scriptstdstring/scriptstdstring.cpp
+        AngelScript/sdk/add_on/scriptstdstring/scriptstdstring.h
+        AngelScript/sdk/add_on/scriptstdstring/scriptstdstring_utils.cpp
+)
+target_compile_definitions( ${ANGELSCRIPT_LIBRARY_NAME}-addons PRIVATE AS_USE_NAMESPACE )
+target_include_directories( ${ANGELSCRIPT_LIBRARY_NAME}-addons PRIVATE ${CMAKE_CURRENT_LIST_DIR}/AngelScript/sdk/angelscript/include )
+other_target( ${ANGELSCRIPT_LIBRARY_NAME}-addons )
+
+##
+## AngelScript tests
+## Run tests right after building targets, for simplicity
+##
+
+add_subdirectory(AngelScript/sdk/tests/test_feature/projects/cmake EXCLUDE_FROM_ALL)
+get_target_property( ANGELSCRIPT__TEST_FEATURE__SOURCES test_feature SOURCES )
+get_target_property( ANGELSCRIPT__TEST_FEATURE__SOURCE_DIR test_feature SOURCE_DIR )
+list( TRANSFORM ANGELSCRIPT__TEST_FEATURE__SOURCES REPLACE "^(.+)$" "${ANGELSCRIPT__TEST_FEATURE__SOURCE_DIR}/\\1" )
+add_executable( angelscript-test-feature EXCLUDE_FROM_ALL )
+target_sources( angelscript-test-feature PRIVATE ${ANGELSCRIPT__TEST_FEATURE__SOURCES} )
+target_compile_definitions( angelscript-test-feature PRIVATE DONT_WAIT=1 )
+target_link_libraries( angelscript-test-feature PRIVATE angelscript )
+target_include_directories( angelscript-test-feature PRIVATE ${CMAKE_CURRENT_LIST_DIR}/AngelScript/sdk/angelscript/include )
+other_target(angelscript-test-feature)
+if(CMAKE_COMPILER_IS_GNUCXX)
+    if( WIN32 )
+        compiler_flag( "link" angelscript-test-feature -static           COMPILER_FLAG_STATIC )
+    endif()
+    compiler_flag( "link" angelscript-test-feature -static-libgcc    COMPILER_FLAG_STATIC_LIBGCC )
+    compiler_flag( "link" angelscript-test-feature -static-libstdc++ COMPILER_FLAG_STATIC_LIBSTDCPP )
+endif()
+
+add_custom_command( TARGET angelscript-test-feature
+    POST_BUILD
+    COMMAND  $<TARGET_FILE:angelscript-test-feature>
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/AngelScript/sdk/tests/test_feature/bin/
+)
 
 ##
 ## json

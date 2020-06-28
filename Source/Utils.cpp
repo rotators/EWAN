@@ -10,7 +10,7 @@ bool EWAN::Utils::ReadFile(const std::string& filename, std::ifstream& fstream)
     const std::string file = Text::Replace( filename, "\\", "/" );
     if(!std::filesystem::exists(file))
     {
-        Log::Raw("File not found : " + file );
+        Log::Raw("File not found : " + std::filesystem::path(file).make_preferred().string());
         return false;
     }
 
@@ -27,11 +27,11 @@ bool EWAN::Utils::ReadFile(const std::string& filename, std::ifstream& fstream)
         // skip bom
         char bom[3] = { 0, 0, 0 };
         fstream.read( bom, sizeof(bom) );
-        if( bom[0] != (char)0xEF || bom[1] != (char)0xBB || bom[2] != (char)0xBF )
+        if( bom[0] != static_cast<char>(0xEF) || bom[1] != static_cast<char>(0xBB) || bom[2] != static_cast<char>(0xBF) )
             fstream.seekg( 0, std::ifstream::beg );
     }
     else
-        Log::Raw("File cannot be read : " + file);
+        Log::Raw("File cannot be read : " + std::filesystem::path(file).make_preferred().string());
 
     return result;
 }

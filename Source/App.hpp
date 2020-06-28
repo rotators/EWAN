@@ -2,10 +2,9 @@
 
 #include "Content.hpp"
 #include "GameInfo.hpp"
+#include "Script.hpp"
 #include "Settings.hpp"
 #include "Window.hpp"
-
-#include "Libs/SFML.hpp"
 
 #include <cstdint>
 #include <string>
@@ -20,11 +19,11 @@ namespace EWAN
         bool Quit = false;
         uint8_t Unused0[2];
 
+        EWAN::Content  Content;
+        EWAN::GameInfo GameInfo;
+        EWAN::Script   Script;
         EWAN::Settings Settings;
-
-        EWAN::Window    Window;
-        EWAN::GameInfo  GameInfo;
-        EWAN::Content   Content;
+        EWAN::Window   Window;
 
     public:
         App();
@@ -34,13 +33,10 @@ namespace EWAN
         bool Init();
         void Finish();
 
-        bool InitGameInfo(const std::string& path = ".", const std::string& id = std::string());
+        bool InitGameInfo(const std::string& path = ".", const std::string& id = {});
         bool LoadContent();
         void MainLoop();
         void ProcessEvents();
         void ProcessRender();
-
-        bool ReadFile(const std::string& filename, std::string& content);
-        bool ReadFile(const std::string& filename, std::vector<std::string>& lines);
     };
 }

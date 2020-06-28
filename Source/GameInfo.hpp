@@ -14,8 +14,9 @@ namespace EWAN
 
         std::string Name;
         std::string Type;
+        std::string ScriptInit;
 
-        void Clear();
+        void Clear(bool full = false);
 
     public:
         virtual nl::json ToJSON() override;

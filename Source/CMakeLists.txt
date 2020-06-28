@@ -40,6 +40,12 @@ target_sources( ${PROJECT_NAME}
         Generator.hpp
         Log.cpp
         Log.hpp
+        Script.cpp
+        Script.hpp
+        Script.API.cpp
+        Script.Builder.cpp
+        Script.Callback.cpp
+        Script.Event.cpp
         Text.cpp
         Text.hpp
         Utils.cpp
@@ -47,6 +53,7 @@ target_sources( ${PROJECT_NAME}
         Window.cpp
         Window.hpp
 
+        Libs/AngelScript.hpp
         Libs/JSON.cpp
         Libs/JSON.hpp
         Libs/SFML.hpp
@@ -56,6 +63,10 @@ target_include_directories( ${PROJECT_NAME}
         "${CMAKE_CURRENT_LIST_DIR}"
         "${PROJECT_BINARY_DIR}/Embed"
 )
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+    compiler_source_flag(Script.API.cpp -Wno-cast-function-type COMPILER_FLAG_WNO_CAST_FUNCTION_TYPE)
+endif()
 
 foreach( ver IN ITEMS MAJOR MINOR PATCH TWEAK )
     if( PROJECT_VERSION_${ver} )

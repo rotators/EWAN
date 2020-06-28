@@ -3,6 +3,7 @@
 #if defined(__GNUC__)
  #pragma GCC diagnostic push
  #pragma GCC diagnostic ignored "-Wpadded"
+ #pragma GCC diagnostic ignored "-Wuseless-cast"
 #endif
 
 #include <nlohmann/json.hpp>

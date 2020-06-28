@@ -1,5 +1,6 @@
 #include "Embed.hpp"
 #include "Log.hpp"
+#include "Script.hpp"
 #include "Window.hpp"
 
 #include <algorithm>
@@ -68,7 +69,7 @@ bool EWAN::Window::DrawSprite(const Content& content, const std::string& id)
     return false;
 }
 
-bool EWAN::Window::Update()
+bool EWAN::Window::Update(Script& script)
 {
     bool result = true;
 
@@ -82,6 +83,8 @@ bool EWAN::Window::Update()
         }
         else if(event.type == sf::Event::KeyPressed)
         {
+            script.Event.Run(script.Event.OnKeyDown);
+
             if(event.key.shift && event.key.code == sf::Keyboard::Escape)
             {
                 Log::Raw("Event::Keypressed Shift+Escape");
@@ -113,9 +116,11 @@ void EWAN::Window::UpdateFPS()
     ++FPS.Frame;
 }
 
-void EWAN::Window::Render()
+void EWAN::Window::Render(Script& script)
 {
     clear();
+
+    script.Event.Run(script.Event.OnDraw);
 
     // always last
 

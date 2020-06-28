@@ -40,6 +40,10 @@ bool EWAN::App::Init()
     if(!InitGameInfo())
         return false;
 
+    Log::Raw("Script...");
+    if(!Script.Init(this))
+        return false;
+
     Log::Raw("Window...");
     if(!Window.Init(Content, Settings))
         return false;
@@ -51,6 +55,9 @@ void EWAN::App::Finish()
 {
     Log::Raw("Finish");
     Finished = true;
+
+    Log::Raw("Script...");
+    Script.Finish();
 
     Log::Raw("Window...");
     Window.Finish();
@@ -68,7 +75,7 @@ void EWAN::App::Finish()
 
 //
 
-bool EWAN::App::InitGameInfo(const std::string& path /*= "." */, const std::string& id /*= std::string()*/)
+bool EWAN::App::InitGameInfo(const std::string& path /*= "." */, const std::string& id /*= {}*/)
 {
     if(path.empty())
     {
@@ -97,11 +104,6 @@ bool EWAN::App::InitGameInfo(const std::string& path /*= "." */, const std::stri
             continue;
 
         files.emplace_back(std::filesystem::absolute(file.path()).make_preferred().string());
-
-        /*
-        scripts.push_back( file.path().string().substr( path.length(), file.path().string().length() - path.length() ) );
-        scripts.back().erase( 0, scripts.back().find_first_not_of( "\\/" ) );  // trim left
-        */
     }
 
     if(files.empty())
@@ -114,28 +116,24 @@ bool EWAN::App::InitGameInfo(const std::string& path /*= "." */, const std::stri
 
     for(const auto& filename : files)
     {
-        std::string gameName = GameInfo.Path = filename;
+        GameInfo.Clear(true);
+        GameInfo.Path = filename;
 
         nl::json json;
 
         if(JSON::ReadJSON(filename, json) && GameInfo.FromJSON(json))
         {
-            gameName = GameInfo.Name + " -> " + gameName;
-
             if(id.empty() || id == GameInfo.Name)
             {
-                Log::Raw("GameInfo selected : " + gameName);
+                Log::Raw("GameInfo selected : " + GameInfo.Name + " -> " + GameInfo.Path);
                 return true;
             }
 
-            Log::Raw("GameInfo skipped : " + gameName);
+            Log::Raw("GameInfo skipped : " + GameInfo.Path);
         }
         else
         {
-            if(!GameInfo.Name.empty())
-                gameName = GameInfo.Name + " -> " + gameName;
-            Log::Raw("GameInfo invalid : " + gameName);
-            GameInfo.Clear();
+            Log::Raw("GameInfo invalid : " + GameInfo.Path);
         }
     }
 
@@ -181,8 +179,8 @@ void EWAN::App::MainLoop()
     {
         if(Window.isOpen())
         {
-            quit = !Window.Update();
-            Window.Render();
+            quit = !Window.Update(Script);
+            Window.Render(Script);
         }
 
         // always last

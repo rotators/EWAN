@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Content.hpp"
+#include "Script.hpp"
 #include "Settings.hpp"
 
 #include "Libs/SFML.hpp"
@@ -13,7 +14,7 @@ namespace EWAN
     class Window : public sf::RenderWindow
     {
     public:
-        struct
+        struct FPS
         {
             sf::Clock Clock;
             sf::Text  Text;
@@ -24,7 +25,9 @@ namespace EWAN
             uint16_t  Frame = 0;
 
             bool      Visible = true;
-        } FPS;
+        };
+
+        EWAN::Window::FPS FPS;
 
 //        uint8_t Unused[4];
 
@@ -38,8 +41,8 @@ namespace EWAN
 
         bool DrawSprite(const Content& content, const std::string& id);
 
-        bool Update();
+        bool Update(Script& script);
         void UpdateFPS();
-        void Render();
+        void Render(Script& script);
     };
 }

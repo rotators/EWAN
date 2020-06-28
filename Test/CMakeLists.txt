@@ -17,6 +17,12 @@ list( FILTER engine_sources EXCLUDE REGEX "/CMakeLists\.txt$" )
 list( TRANSFORM engine_sources REPLACE "^(.+)$" "${engine_dir}/\\1" )
 
 ##
+## Add extra compiler flags for selected files
+##
+compiler_source_flag( ${PROJECT_NAME}.Test.cpp     -Wno-useless-cast       COMPILER_FLAG_WNO_USELESS_CAST )
+compiler_source_flag( ${engine_dir}/Script.API.cpp -Wno-cast-function-type COMPILER_FLAG_WNO_CAST_FUNCTION_TYPE )
+
+##
 ## Use test sources filenames to create more friendly tests names
 ##
 foreach( cpp IN LISTS test_files )
