@@ -63,9 +63,22 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
     _(ok, engine->RegisterObjectMethod("Script", "bool LoadModule(const string fileName, const string moduleName) const", as::asMETHOD(Script,LoadModule_Call), as::asCALL_THISCALL));
     _(ok, engine->RegisterObjectMethod("Script", "bool UnloadModule(const string moduleName) const", as::asMETHOD(Script,UnloadModule_Call), as::asCALL_THISCALL));
 
-    //
+    // NOTE: Functions marked with 'SFML' are binding directly to SFML methods
+
+    _(ok, engine->RegisterEnum("WindowStyle"));
+    _(ok, engine->RegisterEnumValue("WindowStyle", "None", sf::Style::None));
+    _(ok, engine->RegisterEnumValue("WindowStyle", "Titlebar", sf::Style::Titlebar));
+    _(ok, engine->RegisterEnumValue("WindowStyle", "Resize", sf::Style::Resize));
+    _(ok, engine->RegisterEnumValue("WindowStyle", "Close", sf::Style::Close));
+    _(ok, engine->RegisterEnumValue("WindowStyle", "Fullscreen", sf::Style::Fullscreen));
+    _(ok, engine->RegisterEnumValue("WindowStyle", "Default", sf::Style::Default));
 
     _(ok, engine->RegisterObjectProperty("Window", "WindowFPS FPS", asOFFSET(Window, FPS)));
+
+    _(ok, engine->RegisterObjectMethod("Window", "bool get_IsOpen() property", as::asMETHOD(Window, isOpen), as::asCALL_THISCALL)); // SFML
+
+    _(ok, engine->RegisterObjectMethod("Window", "void Open(uint32 width = 0, uint32 height = 0, uint8 bitsPerPixel = 32, string title = \"\", uint32 style = WindowStyle::Default)", as::asMETHOD(Window, Open_Call), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Window", "void Close()", as::asMETHOD(Window, close), as::asCALL_THISCALL)); // SFML
 
     //
 

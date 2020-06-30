@@ -76,14 +76,11 @@ bool EWAN::Script::Init(App* app)
 
         for(auto& module : allModules)
         {
-            WriteInfo(engine,"module?="s + module->GetName() );
-
             if(GetUserData(module)->Unload)
             {
                 UnloadModule(module);
                 continue;
             }
-            WriteInfo(engine,"module!="s + module->GetName() );
         }
     }
 
@@ -308,8 +305,6 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
 
 bool EWAN::Script::BindImportedFunctions(as::asIScriptEngine* engine)
 {
-    WriteInfo(engine, "Importing functions");
-
     for(as::asUINT m=0, mLen = engine->GetModuleCount(); m<mLen; m++)
     {
         if(!BindImportedFunctions(engine->GetModuleByIndex(m)))
@@ -326,9 +321,6 @@ bool EWAN::Script::BindImportedFunctions(as::asIScriptModule* module)
     bool result = true;
     for(as::asUINT f=0, fLen=module->GetImportedFunctionCount(); f<fLen; f++)
     {
-        if(!f)
-            WriteInfo(engine, "Importing functions", module->GetName());
-
         const char* importModuleName = module->GetImportedFunctionSourceModule(f);
         const char* importFunctionDeclaration = module->GetImportedFunctionDeclaration(f);
         std::string importString = "import "s + importFunctionDeclaration + " from \"" + importModuleName + "\"";
@@ -398,7 +390,8 @@ as::asIScriptEngine* EWAN::Script::CreateEngine()
         { as::asEP_COMPILER_WARNINGS, 2 }, // -Werror for scripts, woohoo!
         { as::asEP_DISALLOW_EMPTY_LIST_ELEMENTS, true },
         { as::asEP_DISALLOW_GLOBAL_VARS, true },
-        { as::asEP_OPTIMIZE_BYTECODE, true }
+        { as::asEP_OPTIMIZE_BYTECODE, true },
+        { as::asEP_REQUIRE_ENUM_SCOPE, true }
     };
 
     int r = 0;
@@ -589,6 +582,7 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
         }
         else
         {
+            // Mimic scriptbuilder error with little more details
             WriteError(engine, "Invalid #pragma directive : #pragma " + pragmaString);
             return -1;
         }

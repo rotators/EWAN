@@ -2,7 +2,6 @@
 
 #include "Content.hpp"
 #include "Script.hpp"
-#include "Settings.hpp"
 
 #include "Libs/SFML.hpp"
 
@@ -33,11 +32,12 @@ namespace EWAN
 
     public:
         Window();
-        Window(sf::VideoMode mode, const sf::String& title, sf::Uint32 style = sf::Style::Default, const sf::ContextSettings& settings = sf::ContextSettings());
 
     public:
-        bool Init(Content& content, const Settings& settings);
+        bool Init(Content& content);
         void Finish();
+
+        void Open_Call(sf::Uint32 width, sf::Uint32 height, sf::Uint32 bitsPerPixel = 32, const std::string& title = {}, sf::Uint32 style = sf::Style::Default);
 
         bool DrawSprite(const Content& content, const std::string& id);
 

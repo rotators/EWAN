@@ -40,12 +40,12 @@ bool EWAN::App::Init()
     if(!InitGameInfo())
         return false;
 
-    Log::Raw("Script...");
-    if(!Script.Init(this))
+    Log::Raw("Window...");
+    if(!Window.Init(Content))
         return false;
 
-    Log::Raw("Window...");
-    if(!Window.Init(Content, Settings))
+    Log::Raw("Script...");
+    if(!Script.Init(this))
         return false;
 
     return true;

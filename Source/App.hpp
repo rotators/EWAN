@@ -3,7 +3,6 @@
 #include "Content.hpp"
 #include "GameInfo.hpp"
 #include "Script.hpp"
-#include "Settings.hpp"
 #include "Window.hpp"
 
 #include <cstdint>
@@ -22,7 +21,6 @@ namespace EWAN
         EWAN::Content  Content;
         EWAN::GameInfo GameInfo;
         EWAN::Script   Script;
-        EWAN::Settings Settings;
         EWAN::Window   Window;
 
     public:

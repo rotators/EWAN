@@ -9,41 +9,13 @@ EWAN::Window::Window() :
     sf::RenderWindow()
 {}
 
-EWAN::Window::Window(sf::VideoMode mode, const sf::String& title, sf::Uint32 style /*= sf::Style::Default */, const sf::ContextSettings& settings /*= sf::ContextSettings() */) :
-    sf::RenderWindow(mode, title, style, settings)
-{}
-
 //
 
-bool EWAN::Window::Init(EWAN::Content& content, const EWAN::Settings& settings)
+bool EWAN::Window::Init(EWAN::Content& content)
 {
     content.Font.New("*embed/Window/FPS")->loadFromMemory(&Embed::Font::Monospace_Typewriter_ttf, Embed::Font::Monospace_Typewriter_ttf_l);
     FPS.Text.setFont(*content.Font.Get("*embed/Window/FPS"));
     FPS.Text.setCharacterSize(14);
-
-    sf::ContextSettings ctxSettings;
-
-    create(sf::VideoMode(0, 0), std::string(), sf::Style::None, ctxSettings);
-    setActive(true);
-
-    sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
-
-    #if __has_include(<format>)
-    Log::Raw(std::format(" desktop = {}x{}", desktop.width, desktop.height));
-    Log::Raw(std::format(" window  = {}x{} @ {},{}", settings.WindowWidth, settings.WindowHeight, settings.WindowLeft, settings.WindowTop))
-    #else
-    Log::Raw(" desktop = " + std::to_string(desktop.width) + "x" + std::to_string(desktop.height));
-    Log::Raw(" window  = " + std::to_string(settings.WindowWidth) + "x" + std::to_string(settings.WindowHeight) + " @ " + std::to_string(settings.WindowLeft) + "," + std::to_string(settings.WindowTop));
-    #endif
-
-    setPosition(sf::Vector2i(settings.WindowLeft, settings.WindowTop));
-
-    if(settings.WindowWidth && settings.WindowHeight)
-        setSize(sf::Vector2u(settings.WindowWidth, settings.WindowHeight));
-    else
-        setSize(sf::Vector2u(desktop.width, desktop.height));
-
-    Log::Raw("sf::Texture::getMaximumSize()=" + std::to_string(sf::Texture::getMaximumSize()));
 
     return true;
 }
@@ -52,6 +24,39 @@ void EWAN::Window::Finish()
 {
     if(isOpen())
         close();
+}
+
+//
+
+void EWAN::Window::Open_Call(sf::Uint32 width, sf::Uint32 height, sf::Uint32 bitsPerPixel /*= 0 */, const std::string& title /*= {} */, sf::Uint32 style /*= sf::Style::Default */)
+{
+    sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
+
+    if(!width && !height)
+    {
+        width = desktop.width;
+        height = desktop.height;
+    }
+    else
+    {
+        width = std::clamp<sf::Uint32>(width, 0, desktop.width);
+        height = std::clamp<sf::Uint32>(height, 0, desktop.height);
+    }
+
+    if(!bitsPerPixel)
+        bitsPerPixel = desktop.bitsPerPixel;
+    else
+        bitsPerPixel = std::clamp<sf::Uint32>(bitsPerPixel, 0, desktop.bitsPerPixel);
+
+    const sf::Uint32 x = (desktop.width - width) / 2, y = (desktop.height - height) / 2;
+
+    Log::Raw(std::to_string(width) + "x" + std::to_string(height) + ":" + std::to_string(bitsPerPixel) + " @ " + std::to_string(x) + "," + std::to_string(y));
+
+    create(sf::VideoMode(0, 0, bitsPerPixel), title, style);
+    setActive(true);
+
+    setPosition(sf::Vector2i(x, y));
+    setSize(sf::Vector2u(width, height));
 }
 
 //

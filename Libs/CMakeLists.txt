@@ -2,6 +2,9 @@ cmake_minimum_required( VERSION 3.17 FATAL_ERROR )
 
 include( CompileTarget )
 
+cmake_policy(PUSH)
+cmake_policy(SET CMP0077 NEW)
+
 set( BUILD_SHARED_LIBS FALSE )
 
 function( project_target_libraries target )
@@ -95,3 +98,5 @@ foreach( name IN ITEMS activity audio graphics main network system window)
         other_target( sfml-${name} )
     endif()
 endforeach()
+
+cmake_policy(POP)
