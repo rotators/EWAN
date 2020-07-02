@@ -30,8 +30,9 @@ jobs:
     cfg:
     - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -10,  arch: 32, generator: Unix Makefiles,        app: EWAN }
     - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -10,  arch: 64, generator: Unix Makefiles,        app: EWAN }
-    - { os: ubuntu-latest, name: Clang,  cc: clang, cxx: clang++, ver: -9,   arch: 32, generator: Unix Makefiles,        app: EWAN }
-    - { os: ubuntu-latest, name: Clang,  cc: clang, cxx: clang++, ver: -9,   arch: 64, generator: Unix Makefiles,        app: EWAN }
+# clang really doesn't like AngelScript's asm
+#BORKD{ os: ubuntu-latest, name: Clang,  cc: clang, cxx: clang++, ver: -9,   arch: 32, generator: Unix Makefiles,        app: EWAN }
+#     { os: ubuntu-latest, name: Clang,  cc: clang, cxx: clang++, ver: -9,   arch: 64, generator: Unix Makefiles,        app: EWAN }
 #BORKD{ os: windows-2019,  name: VS2019, cc: cl,    cxx: cl,      ver: null, arch: 32, generator: Visual Studio 16 2019, app: Release/EWAN.exe }
 #BORKD{ os: windows-2019,  name: VS2019, cc: cl,    cxx: cl,      ver: null, arch: 64, generator: Visual Studio 16 2019, app: Release/EWAN.exe }
 #BORKD{ os: windows-2019,  name: MinGW,  cc: gcc,   cxx: g++,     ver: null, arch: 64, generator: MinGW Makefiles,       app: EWAN.exe }
