@@ -430,6 +430,8 @@ void EWAN::Script::DestroyEngine(as::asIScriptEngine*& engine)
 
     engine->ShutDownAndRelease();
     engine = nullptr;
+
+    Log::Print("[INFO] Destroying script engine complete");
 }
 
 //

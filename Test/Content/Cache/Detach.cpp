@@ -3,17 +3,17 @@
 
 TEST_MAIN
 {
-    Content::Cache<sf::Sprite> c("c");
-    sf::Sprite* oldData =  nullptr;
-    sf::Sprite* newData =  nullptr;
+    Content c;
+    void* oldData =  nullptr;
+    void* newData =  nullptr;
     Content::Info* oldInfo = nullptr;
     Content::Info* newInfo = nullptr;
 
-    c.New("id");
-    c.GetDataInfo( "id", oldData, oldInfo );
+    c.Sprite.New("id");
+    c.Sprite.GetDataInfo( "id", oldData, oldInfo );
 
     //
-    c.Detach("id", newData, newInfo);
+    c.Sprite.Detach("id", newData, newInfo);
     //
 
     TEST_ASSERT(newData != nullptr);

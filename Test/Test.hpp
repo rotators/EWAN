@@ -21,6 +21,8 @@ using namespace EWAN;
 
 #define TEST_ASSERT(x)     if(!(x)){ Log::Raw(std::string("ASSERT ") + #x); return EXIT_FAILURE; }
 
+#define CONTENT_CACHE_LIST(c) {&c.Font, &c.Image, &c.SoundBuffer, &c.Sprite}
+
 // Attempt to use sf::Texture in test will always generate failure under GitHub Actions + Linux
 #if defined(__GNUC__)
  #pragma GCC poison Texture

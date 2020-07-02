@@ -12,7 +12,8 @@
  #include <format>
 #endif
 
-EWAN::App::App()
+EWAN::App::App() :
+    Version{PROJECT_VERSION_MAJOR, PROJECT_VERSION_MINOR, PROJECT_VERSION_PATCH, PROJECT_VERSION_TWEAK}
 {}
 
 EWAN::App::~App()

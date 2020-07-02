@@ -31,9 +31,10 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
     _(ok, engine->SetDefaultNamespace(ns.c_str()));
 
     // Forward declarations
+
     static const std::vector<const char*> objRefNoHandle = {
         "App", "Content", "GameInfo", "Script", "Window",
-        "WindowFPS"
+        "ContentCache", "WindowFPS"
     };
 
     for(const auto& obj : objRefNoHandle)
@@ -43,12 +44,34 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
 
     //
 
-    _(ok, engine->RegisterObjectProperty("App", "const Content  Content", asOFFSET(App, Content)));
+    if constexpr(sizeof(size_t) == 4)
+        _(ok, engine->RegisterTypedef("size_t", "uint32"));
+    else
+        _(ok, engine->RegisterTypedef("size_t", "uint64"));
+
+    //
+
+    _(ok, engine->RegisterObjectProperty("App", "      Content  Content", asOFFSET(App, Content)));
     _(ok, engine->RegisterObjectProperty("App", "const GameInfo GameInfo", asOFFSET(App, GameInfo)));
     _(ok, engine->RegisterObjectProperty("App", "const Script   Script", asOFFSET(App, Script)));
     _(ok, engine->RegisterObjectProperty("App", "      Window   Window", asOFFSET(App, Window)));
 
     _(ok, engine->RegisterObjectMethod( "App", "void Log(const string text) const", as::asFUNCTION(AppLog), as::asCALL_CDECL_OBJFIRST));
+
+    //
+
+    _(ok, engine->RegisterObjectMethod("ContentCache", "bool New(const string id)", as::asMETHOD(Content::Cache, New), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("ContentCache", "bool Delete(const string id)", as::asMETHOD(Content::Cache, Delete), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("ContentCache", "void DeleteAll()", as::asMETHOD(Content::Cache, DeleteAll), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("ContentCache", "size_t Size()", as::asMETHOD(Content::Cache, Size), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("ContentCache", "bool Exists(const string id)", as::asMETHOD(Content::Cache, Exists), as::asCALL_THISCALL));
+
+    _(ok, engine->RegisterObjectProperty("Content", "ContentCache Font", asOFFSET(Content, Font)));
+    _(ok, engine->RegisterObjectProperty("Content", "ContentCache Sprite", asOFFSET(Content, Sprite)));
+
+    _(ok, engine->RegisterObjectMethod("Content", "void DeleteAll()", as::asMETHOD(Content, DeleteAll), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Content", "size_t Size()", as::asMETHOD(Content, Size), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Content", "size_t LoadDirectoruy(const string id)", as::asMETHOD(Content, Size), as::asCALL_THISCALL));
 
     //
 

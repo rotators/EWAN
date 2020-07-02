@@ -8,20 +8,10 @@ file( GLOB_RECURSE test_files LIST_DIRECTORIES false RELATIVE "${CMAKE_CURRENT_L
 create_test_sourcelist( test_sources ${PROJECT_NAME}.Test.cpp ${test_files} )
 
 ##
-## Include engine's sources in test app, except entry point code
-##
-get_target_property( engine_sources ${PROJECT_NAME} SOURCES )
-get_target_property( engine_dir ${PROJECT_NAME} SOURCE_DIR )
-list( FILTER engine_sources EXCLUDE REGEX "^Main\.cpp$" )
-list( FILTER engine_sources EXCLUDE REGEX "/CMakeLists\.txt$" )
-list( TRANSFORM engine_sources REPLACE "^(.+)$" "${engine_dir}/\\1" )
-
-##
 ## Add extra compiler flags for selected files
 ##
 if(CMAKE_COMPILER_IS_GNUCXX)
     compiler_source_flag( ${PROJECT_NAME}.Test.cpp     -Wno-useless-cast       COMPILER_FLAG_WNO_USELESS_CAST )
-    compiler_source_flag( ${engine_dir}/Script.API.cpp -Wno-cast-function-type COMPILER_FLAG_WNO_CAST_FUNCTION_TYPE )
 endif()
 
 ##
@@ -50,19 +40,25 @@ target_include_directories( ${PROJECT_NAME}.Test
         "${PROJECT_BINARY_DIR}/Embed"
 )
 
-project_target_libraries( ${PROJECT_NAME}.Test )
+target_link_libraries( ${PROJECT_NAME}.Test PRIVATE ${PROJECT_NAME}.Core )
 project_target( ${PROJECT_NAME}.Test )
-add_dependencies( ${PROJECT_NAME}.Test ${PROJECT_NAME} )
 
 ##
 ## On Windows, copy OpenAL library to build directory
 ##
 if( TARGET OpenAL AND WIN32 )
-    if( CMAKE_SIZEOF_VOID_P EQUAL 4 )
+    include(CheckTypeSize)
+    check_type_size(void* ${PROJECT_NAME}_SIZEOF_VOID_P) 
+
+    if( ${PROJECT_NAME}_SIZEOF_VOID_P EQUAL 4 )
         set( openal_dir x86 )
-    elseif( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+    elseif( ${PROJECT_NAME}_SIZEOF_VOID_P EQUAL 8 )
         set( openal_dir x64 )
+    else()
+        message(FATAL_ERROR "${PROJECT_NAME}_SIZEOF_VOID_P = '${${PROJECT_NAME}_SIZEOF_VOID_P}'")
     endif()
+
+    message(STATUS "Check size of void* - ${${PROJECT_NAME}_SIZEOF_VOID_P}")
 
     add_custom_command( TARGET ${PROJECT_NAME}.Test
         POST_BUILD

@@ -18,7 +18,8 @@ function( compiler_source_flag file flag var )
     check_cxx_compiler_flag( ${flag} ${var} )
 
     if( ${var} )
-        set_source_files_properties(${file} PROPERTIES COMPILE_OPTIONS "${flag}")
+        # set_source_files_properties(${file} PROPERTIES COMPILE_OPTIONS "${flag}")
+        set_property( SOURCE ${file} APPEND PROPERTY COMPILE_OPTIONS "${flag}" )
     endif()
 endfunction()
 

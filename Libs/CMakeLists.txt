@@ -2,33 +2,16 @@ cmake_minimum_required( VERSION 3.17 FATAL_ERROR )
 
 include( CompileTarget )
 
-cmake_policy(PUSH)
-cmake_policy(SET CMP0077 NEW)
-
 set( BUILD_SHARED_LIBS FALSE )
-
-function( project_target_libraries target )
-    target_link_libraries( ${target} PRIVATE ${ANGELSCRIPT_LIBRARY_NAME} ${ANGELSCRIPT_LIBRARY_NAME}-addons )
-    target_link_libraries( ${target} PRIVATE nlohmann_json::nlohmann_json )
-    target_link_libraries( ${target} PRIVATE sfml-audio sfml-graphics sfml-system sfml-window) # sfml-network
-    foreach( lib IN ITEMS sfml-activity sfml-main )
-        if( TARGET ${lib} )
-            target_link_libraries( ${target} PRIVATE ${lib} )
-        endif()
-    endforeach()
-
-    target_include_directories( ${target} PRIVATE ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/AngelScript/sdk/angelscript/include )
-    target_include_directories( ${target} PRIVATE ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/AngelScript/sdk/add_on )
-endfunction()
 
 ##
 ## AngelScript
 ##
 
-add_subdirectory(AngelScript/sdk/angelscript/projects/cmake EXCLUDE_FROM_ALL)
+add_subdirectory( AngelScript/sdk/angelscript/projects/cmake EXCLUDE_FROM_ALL )
 target_compile_definitions( ${ANGELSCRIPT_LIBRARY_NAME} PUBLIC AS_USE_NAMESPACE )
 ##other_target( ${ANGELSCRIPT_LIBRARY_NAME} )
-if(CMAKE_COMPILER_IS_GNUCXX)
+if( CMAKE_COMPILER_IS_GNUCXX )
     # https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_lib.html#doc_compile_gnuc
     compiler_flag( "compile" angelscript -fno-strict-aliasing COMPILER_FLAG_FNO_STRICT_ALIASING )
 endif()
@@ -99,4 +82,48 @@ foreach( name IN ITEMS activity audio graphics main network system window)
     endif()
 endforeach()
 
-cmake_policy(POP)
+####               ####
+##                   ##
+## Interface targets ##
+##                   ##
+####               ####
+
+##
+## {PROJECT_NAME}.AngelScript
+##
+
+add_library( ${PROJECT_NAME}.AngelScript INTERFACE )
+target_include_directories( ${PROJECT_NAME}.AngelScript INTERFACE ${CMAKE_CURRENT_LIST_DIR}/AngelScript/sdk/angelscript/include )
+target_include_directories( ${PROJECT_NAME}.AngelScript INTERFACE ${CMAKE_CURRENT_LIST_DIR}/AngelScript/sdk/add_on )
+target_link_libraries( ${PROJECT_NAME}.AngelScript INTERFACE ${ANGELSCRIPT_LIBRARY_NAME} ${ANGELSCRIPT_LIBRARY_NAME}-addons )
+
+##
+## {PROJECT_NAME}.JSON
+##
+
+add_library( ${PROJECT_NAME}.JSON INTERFACE )
+target_link_libraries( ${PROJECT_NAME}.JSON INTERFACE nlohmann_json::nlohmann_json )
+
+##
+## {PROJECT_NAME}.SFML
+##
+
+add_library( ${PROJECT_NAME}.SFML INTERFACE )
+target_link_libraries( ${PROJECT_NAME}.SFML INTERFACE sfml-audio sfml-graphics sfml-system sfml-window) # sfml-network
+
+foreach( lib IN ITEMS sfml-activity sfml-main )
+    if( TARGET ${lib} )
+        target_link_libraries( ${PROJECT_NAME}.SFML INTERFACE ${lib} )
+    endif()
+endforeach()
+
+####                 ####
+##                     ##
+## {PROJECT_NAME}.Libs ##
+##                     ##
+####                 ####
+
+add_library( ${PROJECT_NAME}.Libs INTERFACE )
+target_link_libraries( ${PROJECT_NAME}.Libs INTERFACE ${PROJECT_NAME}.AngelScript )
+target_link_libraries( ${PROJECT_NAME}.Libs INTERFACE ${PROJECT_NAME}.JSON )
+target_link_libraries( ${PROJECT_NAME}.Libs INTERFACE ${PROJECT_NAME}.SFML )

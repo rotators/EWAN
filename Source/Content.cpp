@@ -11,17 +11,76 @@
 
 // Remember to wear protective goggles :)
 
-template class EWAN::Content::Cache<sf::Font>;
-template class EWAN::Content::Cache<sf::Sprite>;
-template class EWAN::Content::Cache<sf::Texture>;
+namespace
+{
+    static void* NewFont()
+    {
+        return new sf::Font;
+    }
 
-template<typename T>
-EWAN::Content::Cache<T>::Cache(std::string name) :
-    Name(name)
+    static void DeleteFont(void* data)
+    {
+        delete static_cast<sf::Font*>(data);
+    }
+
+    static void* NewImage()
+    {
+        return new sf::Image;
+    }
+
+    static void DeleteImage(void* data)
+    {
+        delete static_cast<sf::Image*>(data);
+    }
+
+    static void* NewRenderTexture()
+    {
+        return new sf::RenderTexture;
+    }
+
+    static void DeleteRenderTexture(void* data)
+    {
+        delete static_cast<sf::RenderTexture*>(data);
+    }
+
+    static void* NewSoundBuffer()
+    {
+        return new sf::SoundBuffer;
+    }
+
+    static void DeleteSoundBuffer(void* data)
+    {
+        delete static_cast<sf::SoundBuffer*>(data);
+    }
+
+    static void* NewSprite()
+    {
+        return new sf::Sprite;
+    }
+
+    static void DeleteSprite(void* data)
+    {
+        delete static_cast<sf::Sprite*>(data);
+    }
+
+    static void* NewTexture()
+    {
+        return new sf::Sprite;
+    }
+
+    static void DeleteTexture(void* data)
+    {
+        delete static_cast<sf::Texture*>(data);
+    }
+}
+
+//
+
+EWAN::Content::Cache::Cache(std::string name, CallbackNewFunction callbackNew, CallbackDeleteFunction callbackDelete) :
+    Name(name), CallbackNew(callbackNew), CallbackDelete(callbackDelete)
 {}
 
-template<typename T>
-EWAN::Content::Cache<T>::~Cache()
+EWAN::Content::Cache::~Cache()
 {
     if(!CacheMap.empty())
     {
@@ -37,8 +96,7 @@ EWAN::Content::Cache<T>::~Cache()
     }
 }
 
-template<typename T>
-EWAN::Content::Info* EWAN::Content::Cache<T>::Attach(const std::string& id, T* data, Content::Info* info)
+EWAN::Content::Info* EWAN::Content::Cache::Attach(const std::string& id, void* data, Content::Info* info)
 {
     if(Text::IsBlank(id))
     {
@@ -76,10 +134,9 @@ EWAN::Content::Info* EWAN::Content::Cache<T>::Attach(const std::string& id, T* d
     return info;
 }
 
-template<typename T>
-T* EWAN::Content::Cache<T>::Detach(const std::string& id)
+void* EWAN::Content::Cache::Detach(const std::string& id)
 {
-    T*    data;
+    void* data;
     Info* info;
 
     if(GetDataInfo(id, data, info))
@@ -94,8 +151,7 @@ T* EWAN::Content::Cache<T>::Detach(const std::string& id)
     return nullptr;
 }
 
-template<typename T>
-bool EWAN::Content::Cache<T>::Detach(const std::string& id, T*& data, EWAN::Content::Info*& info)
+bool EWAN::Content::Cache::Detach(const std::string& id, void*& data, EWAN::Content::Info*& info)
 {
     data = nullptr;
     info = nullptr;
@@ -111,14 +167,13 @@ bool EWAN::Content::Cache<T>::Detach(const std::string& id, T*& data, EWAN::Cont
     return false;
 }
 
-template<typename T>
-T* EWAN::Content::Cache<T>::New(const std::string& id)
+void* EWAN::Content::Cache::New(const std::string& id)
 {
-    T* data = new T();
+    void* data = CallbackNew();
 
     if(!Attach(id, data))
     {
-        delete data;
+        CallbackDelete(data);
 
         return nullptr;
     }
@@ -126,22 +181,20 @@ T* EWAN::Content::Cache<T>::New(const std::string& id)
     return data;
 }
 
-template<typename T>
-bool EWAN::Content::Cache<T>::Delete(const std::string& id)
+bool EWAN::Content::Cache::Delete(const std::string& id)
 {
-    T* data = Detach(id);
+    void* data = Detach(id);
 
     if(data)
     {
-        delete data;
+        CallbackDelete(data);
         return true;
     }
 
     return false;
 }
 
-template<typename T>
-size_t EWAN::Content::Cache<T>::DeleteAll()
+size_t EWAN::Content::Cache::DeleteAll()
 {
     size_t count = 0;
 
@@ -150,7 +203,7 @@ size_t EWAN::Content::Cache<T>::DeleteAll()
     sf::Lock lock(CacheLock);
     for(const auto& it : CacheMap)
     {
-        delete std::get<0>(it.second); // data
+        CallbackDelete(std::get<0>(it.second)); // data
         delete std::get<1>(it.second); // info
         count++;
     }
@@ -160,15 +213,17 @@ size_t EWAN::Content::Cache<T>::DeleteAll()
     return count;
 }
 
-template<typename T>
-size_t EWAN::Content::Cache<T>::Move(EWAN::Content::Cache<T>& other)
+size_t EWAN::Content::Cache::Move(Cache& other)
 {
+    if(Name != other.Name)
+        return 0;
+
     sf::Lock lockSelf(CacheLock);
     sf::Lock lockOther(other.CacheLock);
     size_t moved = 0;
 
     std::vector<std::string> keys = Keys();
-    T* data;
+    void* data;
     Info* info;
 
     for(const auto& key : keys)
@@ -182,16 +237,14 @@ size_t EWAN::Content::Cache<T>::Move(EWAN::Content::Cache<T>& other)
     return moved;
 }
 
-template<typename T>
-size_t EWAN::Content::Cache<T>::Size() const
+size_t EWAN::Content::Cache::Size() const
 {
     sf::Lock lock(CacheLock);
 
     return CacheMap.size();
 }
 
-template<typename T>
-std::vector<std::string> EWAN::Content::Cache<T>::Keys() const
+std::vector<std::string> EWAN::Content::Cache::Keys() const
 {
     std::vector<std::string> keys;
 
@@ -204,16 +257,14 @@ std::vector<std::string> EWAN::Content::Cache<T>::Keys() const
     return keys;
 }
 
-template<typename T>
-bool EWAN::Content::Cache<T>::Exists(const std::string& id) const
+bool EWAN::Content::Cache::Exists(const std::string& id) const
 {
     sf::Lock lock(CacheLock);
 
     return CacheMap.find(id) != CacheMap.end();
 }
 
-template<typename T>
-T* EWAN::Content::Cache<T>::Get(const std::string& id, bool silent /*= false */) const
+void* EWAN::Content::Cache::Get(const std::string& id, bool silent /*= false */) const
 {
     sf::Lock lock(CacheLock);
 
@@ -235,8 +286,7 @@ T* EWAN::Content::Cache<T>::Get(const std::string& id, bool silent /*= false */)
     return nullptr;
 }
 
-template<typename T>
-const EWAN::Content::Info* EWAN::Content::Cache<T>::GetInfo(const std::string& id, bool silent /* = false */) const
+const EWAN::Content::Info* EWAN::Content::Cache::GetInfo(const std::string& id, bool silent /* = false */) const
 {
     sf::Lock lock(CacheLock);
 
@@ -258,8 +308,7 @@ const EWAN::Content::Info* EWAN::Content::Cache<T>::GetInfo(const std::string& i
     return nullptr;
 }
 
-template<typename T>
-bool EWAN::Content::Cache<T>::GetDataInfo(const std::string& id, T*& data, EWAN::Content::Info*& info) const
+bool EWAN::Content::Cache::GetDataInfo(const std::string& id, void*& data, EWAN::Content::Info*& info) const
 {
     data = nullptr;
     info = nullptr;
@@ -281,12 +330,12 @@ bool EWAN::Content::Cache<T>::GetDataInfo(const std::string& id, T*& data, EWAN:
 //
 
 EWAN::Content::Content() :
-    Font("Font"),
-    Image("Image"),
-    RenderTexture("RenderTexture"),
-    SoundBuffer("SoundBuffer"),
-    Sprite("Sprite"),
-    Texture("Texture"),
+    Font("Font", NewFont, DeleteFont),
+    Image("Image", NewImage, DeleteImage),
+    RenderTexture("RenderTexture", NewRenderTexture, DeleteRenderTexture),
+    SoundBuffer("SoundBuffer", NewSoundBuffer, DeleteSoundBuffer),
+    Sprite("Sprite", NewSprite, DeleteSprite),
+    Texture("Texture", NewTexture, DeleteTexture),
     FontExtensions({".ttf"}),
     SoundBufferExtensions({".wav"}),
     TextureExtensions({".png"})
@@ -331,7 +380,7 @@ size_t EWAN::Content::Size() const
 }
 
 template<typename T>
-EWAN::Content::Cache<T>& EWAN::Content::GetCache()
+EWAN::Content::Cache& EWAN::Content::GetCache()
 {
     if constexpr(std::is_same_v<T,sf::Font>)
         return Font;
@@ -348,7 +397,7 @@ EWAN::Content::Cache<T>& EWAN::Content::GetCache()
 }
 
 template<typename T>
-const EWAN::Content::Cache<T>& EWAN::Content::GetCache() const
+const EWAN::Content::Cache& EWAN::Content::GetCache() const
 {
     return GetCache<T>();
 }
@@ -369,9 +418,9 @@ T* EWAN::Content::LoadFile(const std::string& filename, std::string& id)
     if(Text::IsBlank(id))
         id = useFilename;
 
-    // Check if
-    Cache<T>& cache = GetCache<T>();
-    T* data = cache.Get(id, true);
+    // Check if id is already in use
+    Cache& cache = GetCache<T>();
+    T* data = cache.GetAs<T>(id, true);
 
     if(data)
         return data;

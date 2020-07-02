@@ -21,18 +21,24 @@ namespace EWAN
         };
 
     public:
-        template<typename T>
         class Cache : sf::NonCopyable
         {
         public:
             const std::string Name;
 
         protected:
-            std::unordered_map<std::string, std::pair<T*, Info*>> CacheMap;
-            mutable sf::Mutex                                     CacheLock;
+            std::unordered_map<std::string, std::pair<void*, Info*>> CacheMap;
+            mutable sf::Mutex                                        CacheLock;
+
+        private:
+            typedef std::function<void* ()>     CallbackNewFunction;
+            typedef std::function<void (void*)> CallbackDeleteFunction;
+
+            CallbackNewFunction    CallbackNew;
+            CallbackDeleteFunction CallbackDelete;
 
         public:
-            Cache(std::string name);
+            Cache(std::string name, CallbackNewFunction callbackNew, CallbackDeleteFunction callbackDelete);
             virtual ~Cache();
 
         private:
@@ -43,20 +49,26 @@ namespace EWAN
             // Adds data to cache
             // Once data is added to cache, it's automagically deleted when needed
             // Returns nullptr if data cannot be added
-            Info* Attach(const std::string& id, T* data, Info* info = nullptr);
+            Info* Attach(const std::string& id, void* data, Info* info = nullptr);
 
             // Removes data from cache, deletes info
             // Returns cached data
-            T* Detach(const std::string& id);
+            void* Detach(const std::string& id);
 
             // Removes data from cache
             // Returns cached data and info
-            bool Detach(const std::string& id, T*& data, Info*& info);
+            bool Detach(const std::string& id, void*& data, Info*& info);
 
             // Creates new data and adds it to cache
             // Supports default constructor only (new T())
             // Returns cached data
-            T* New(const std::string& id);
+            void* New(const std::string& id);
+
+            template<typename T>
+            T* NewAs(const std::string& id)
+            {
+                return static_cast<T*>(New(id));
+            }
 
             // Removes data from cache and deletes it
             // Returns false if data cannot be found
@@ -66,7 +78,7 @@ namespace EWAN
             // Returns amount of deleted entries
             size_t DeleteAll();
 
-            size_t Move(Cache<T>& other);
+            size_t Move(Cache& other);
 
             //  Returns amount of cached entries
             size_t Size() const;
@@ -77,22 +89,28 @@ namespace EWAN
             bool Exists(const std::string& id) const;
 
             // Returns cached data
-            T* Get(const std::string& id, bool silent = false) const;
+            void* Get(const std::string& id, bool silent = false) const;
+
+            template<typename T>
+            T* GetAs(const std::string& id, bool silent = false) const
+            {
+                return static_cast<T*>(Get(id, silent));
+            }
 
             // Returns cached info
             const Info* GetInfo(const std::string& id, bool silent = false) const;
 
             // Returns false if data with given ID wasn't added to cache
-            bool GetDataInfo(const std::string& id, T*& data, Info*& info) const;
+            bool GetDataInfo(const std::string& id, void*& data, Info*& info) const;
         };
 
     public:
-        Cache<sf::Font>          Font;
-        Cache<sf::Image>         Image;
-        Cache<sf::RenderTexture> RenderTexture;
-        Cache<sf::SoundBuffer>   SoundBuffer;
-        Cache<sf::Sprite>        Sprite;
-        Cache<sf::Texture>       Texture;
+        Cache Font;
+        Cache Image;
+        Cache RenderTexture;
+        Cache SoundBuffer;
+        Cache Sprite;
+        Cache Texture;
 
     // used by LoadDirectory() to guess target Cache
     public:
@@ -112,9 +130,9 @@ namespace EWAN
 
         // Returns cache matching given type
         template<typename T>
-        Cache<T>& GetCache();
+        Cache& GetCache();
         template<typename T>
-        const Cache<T>& GetCache() const;
+        const Cache& GetCache() const;
 
         template<typename T>
         T*  LoadFile(const std::string& filename);
@@ -125,7 +143,3 @@ namespace EWAN
         size_t LoadDirectory(const std::string& directory);
     };
 }
-
-extern template class EWAN::Content::Cache<sf::Font>;
-extern template class EWAN::Content::Cache<sf::Sprite>;
-extern template class EWAN::Content::Cache<sf::Texture>;

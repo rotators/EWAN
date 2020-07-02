@@ -13,8 +13,8 @@ EWAN::Window::Window() :
 
 bool EWAN::Window::Init(EWAN::Content& content)
 {
-    content.Font.New("*embed/Window/FPS")->loadFromMemory(&Embed::Font::Monospace_Typewriter_ttf, Embed::Font::Monospace_Typewriter_ttf_l);
-    FPS.Text.setFont(*content.Font.Get("*embed/Window/FPS"));
+    content.Font.NewAs<sf::Font>("*embed/Window/FPS")->loadFromMemory(&Embed::Font::Monospace_Typewriter_ttf, Embed::Font::Monospace_Typewriter_ttf_l);
+    FPS.Text.setFont(*content.Font.GetAs<sf::Font>("*embed/Window/FPS"));
     FPS.Text.setCharacterSize(14);
 
     return true;
@@ -28,10 +28,11 @@ void EWAN::Window::Finish()
 
 //
 
-void EWAN::Window::Open_Call(sf::Uint32 width, sf::Uint32 height, sf::Uint32 bitsPerPixel /*= 0 */, const std::string& title /*= {} */, sf::Uint32 style /*= sf::Style::Default */)
+void EWAN::Window::Open_Call(sf::Uint32 width /*= 0 */, sf::Uint32 height /*= 0 */, sf::Uint32 bitsPerPixel /*= 0 */, const std::string& title /*= {} */, sf::Uint32 style /*= sf::Style::Default */)
 {
     sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
 
+    // Use desktop resolution if width and height isn't set
     if(!width && !height)
     {
         width = desktop.width;
@@ -48,6 +49,7 @@ void EWAN::Window::Open_Call(sf::Uint32 width, sf::Uint32 height, sf::Uint32 bit
     else
         bitsPerPixel = std::clamp<sf::Uint32>(bitsPerPixel, 0, desktop.bitsPerPixel);
 
+    // Center window by default
     const sf::Uint32 x = (desktop.width - width) / 2, y = (desktop.height - height) / 2;
 
     Log::Raw(std::to_string(width) + "x" + std::to_string(height) + ":" + std::to_string(bitsPerPixel) + " @ " + std::to_string(x) + "," + std::to_string(y));
@@ -63,7 +65,7 @@ void EWAN::Window::Open_Call(sf::Uint32 width, sf::Uint32 height, sf::Uint32 bit
 
 bool EWAN::Window::DrawSprite(const Content& content, const std::string& id)
 {
-    sf::Sprite* sprite = content.Sprite.Get(id);
+    sf::Sprite* sprite = content.Sprite.GetAs<sf::Sprite>(id);
 
     if(sprite)
     {
