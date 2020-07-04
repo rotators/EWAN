@@ -1,12 +1,14 @@
 #pragma once
 
+#include "GameInfo.hpp"
+
 #include "Libs/SFML.hpp"
 
 #include <cstdint>
 #include <string>
-#include <typeindex>
 #include <unordered_map>
-#include <utility>
+#include <utility> // pair
+#include <vector>
 
 namespace EWAN
 {
@@ -26,6 +28,9 @@ namespace EWAN
         public:
             const std::string Name;
 
+            // Used by Content::LoadFile()/LoadDirectory() to guess target cache
+            std::vector<std::string> Extensions;
+
         protected:
             std::unordered_map<std::string, std::pair<void*, Info*>> CacheMap;
             mutable sf::Mutex                                        CacheLock;
@@ -38,11 +43,11 @@ namespace EWAN
             CallbackDeleteFunction CallbackDelete;
 
         public:
-            Cache(std::string name, CallbackNewFunction callbackNew, CallbackDeleteFunction callbackDelete);
+            Cache(const std::string& name, CallbackNewFunction callbackNew, CallbackDeleteFunction callbackDelete, const std::vector<std::string>& extensions = {});
             virtual ~Cache();
 
         private:
-            // Makes sure there's no unnamed caches
+            // Makes sure there's no uninitialized caches
             Cache() = delete;
 
         public:
@@ -112,34 +117,34 @@ namespace EWAN
         Cache Sprite;
         Cache Texture;
 
-    // used by LoadDirectory() to guess target Cache
-    public:
-        std::vector<std::string> FontExtensions;
-        std::vector<std::string> SoundBufferExtensions;
-        std::vector<std::string> TextureExtensions;
+    protected:
+        std::string RootDirectory;
 
     public:
         Content();
         virtual ~Content();
 
     public:
-        void   DeleteAll();
+        bool Init(const GameInfo& game);
+        void Finish();
+
+        // Deletes stored data in all caches
+        void DeleteAll();
 
         // Returns total size of all caches
         size_t Size() const;
 
+    protected:
         // Returns cache matching given type
         template<typename T>
         Cache& GetCache();
         template<typename T>
         const Cache& GetCache() const;
-
         template<typename T>
-        T*  LoadFile(const std::string& filename);
-        template<typename T>
-        T*  LoadFile(const std::string& filename, std::string& id);
-
-        // Load all known content in given directory, and cache it in
+        T*  LoadFileInternal(const std::string& filename, const std::string& id);
+    
+    public:
+        bool   LoadFile(const std::string& filename, const std::string& id);
         size_t LoadDirectory(const std::string& directory);
     };
 }

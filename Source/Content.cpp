@@ -76,8 +76,10 @@ namespace
 
 //
 
-EWAN::Content::Cache::Cache(std::string name, CallbackNewFunction callbackNew, CallbackDeleteFunction callbackDelete) :
-    Name(name), CallbackNew(callbackNew), CallbackDelete(callbackDelete)
+EWAN::Content::Cache::Cache(const std::string& name, CallbackNewFunction callbackNew, CallbackDeleteFunction callbackDelete, const std::vector<std::string>& extensions /*= {} */) :
+    Name(name),
+    Extensions(extensions),
+    CallbackNew(callbackNew), CallbackDelete(callbackDelete)
 {}
 
 EWAN::Content::Cache::~Cache()
@@ -95,6 +97,8 @@ EWAN::Content::Cache::~Cache()
         DeleteAll();
     }
 }
+
+//
 
 EWAN::Content::Info* EWAN::Content::Cache::Attach(const std::string& id, void* data, Content::Info* info)
 {
@@ -330,15 +334,12 @@ bool EWAN::Content::Cache::GetDataInfo(const std::string& id, void*& data, EWAN:
 //
 
 EWAN::Content::Content() :
-    Font("Font", NewFont, DeleteFont),
+    Font("Font", NewFont, DeleteFont, {".bdf", ".pcf", ".ttf"}),
     Image("Image", NewImage, DeleteImage),
     RenderTexture("RenderTexture", NewRenderTexture, DeleteRenderTexture),
-    SoundBuffer("SoundBuffer", NewSoundBuffer, DeleteSoundBuffer),
+    SoundBuffer("SoundBuffer", NewSoundBuffer, DeleteSoundBuffer, {".wav"}),
     Sprite("Sprite", NewSprite, DeleteSprite),
-    Texture("Texture", NewTexture, DeleteTexture),
-    FontExtensions({".ttf"}),
-    SoundBufferExtensions({".wav"}),
-    TextureExtensions({".png"})
+    Texture("Texture", NewTexture, DeleteTexture, {".png"})
 {
     // Ugly way to make sure all containers are supported by GetCache()
 
@@ -355,6 +356,22 @@ EWAN::Content::~Content()
     DeleteAll();
 }
 
+//
+
+bool EWAN::Content::Init(const GameInfo& game)
+{
+    RootDirectory = std::filesystem::path(game.Path).remove_filename().make_preferred().string();
+
+    return true;
+}
+
+void EWAN::Content::Finish()
+{
+    DeleteAll();
+}
+
+//
+
 void EWAN::Content::DeleteAll()
 {
     Font.DeleteAll();
@@ -369,15 +386,15 @@ size_t EWAN::Content::Size() const
 {
     size_t size = 0;
 
-    size += Font.Size();
-    size += Image.Size();
-    size += RenderTexture.Size();
-    size += Sprite.Size();
-    size += SoundBuffer.Size();
-    size += Texture.Size();
+    for(auto& cache : {&Font, &Image, &RenderTexture, &Sprite, &SoundBuffer, &Texture})
+    {
+        size += cache->Size();
+    }
 
     return size;
 }
+
+//
 
 template<typename T>
 EWAN::Content::Cache& EWAN::Content::GetCache()
@@ -403,21 +420,8 @@ const EWAN::Content::Cache& EWAN::Content::GetCache() const
 }
 
 template<typename T>
-T* EWAN::Content::LoadFile(const std::string& filename)
+T* EWAN::Content::LoadFileInternal(const std::string& filename, const std::string& id)
 {
-    std::string id;
-
-    return LoadFile<T>(filename, id);
-}
-
-template<typename T>
-T* EWAN::Content::LoadFile(const std::string& filename, std::string& id)
-{
-    const std::string useFilename = Text::ConvertPath(filename);
-
-    if(Text::IsBlank(id))
-        id = useFilename;
-
     // Check if id is already in use
     Cache& cache = GetCache<T>();
     T* data = cache.GetAs<T>(id, true);
@@ -425,9 +429,10 @@ T* EWAN::Content::LoadFile(const std::string& filename, std::string& id)
     if(data)
         return data;
 
-    data = new T();
+    // create SFML object
+    data = new T(); 
 
-    if(data->loadFromFile(useFilename) && cache.Attach(id, data))
+    if(data->loadFromFile(filename) && cache.Attach(id, data))
         return data;
 
     #if __has_include(<format>)
@@ -436,52 +441,86 @@ T* EWAN::Content::LoadFile(const std::string& filename, std::string& id)
     Log::Raw("(" + id + ") ERROR");
     #endif
 
-    id.clear();
     delete data;
 
     return nullptr;
 }
 
+//
+
+bool EWAN::Content::LoadFile(const std::string& filename, const std::string& id)
+{
+    const std::string extension = Text::ToLower(std::filesystem::path(filename).extension().string());
+
+    if(std::find(Font.Extensions.begin(), Font.Extensions.end(), extension) != Font.Extensions.end())
+        return LoadFileInternal<sf::Font>(filename, id) != nullptr;
+    else if(std::find(SoundBuffer.Extensions.begin(), SoundBuffer.Extensions.end(), extension) != SoundBuffer.Extensions.end())
+        return LoadFileInternal<sf::SoundBuffer>(filename, id) != nullptr;
+    else if(std::find(Texture.Extensions.begin(), Texture.Extensions.end(), extension) != Texture.Extensions.end())
+        return LoadFileInternal<sf::Texture>(filename, id) != nullptr;
+
+    return false;
+}
+
 size_t EWAN::Content::LoadDirectory(const std::string& directory)
 {
+    std::string dir;
     size_t loaded = 0, total = 0;
 
-    if(!std::filesystem::exists(directory))
+    // Disallow escaping .game path
+    if(directory.front() == '.')
+    {
+        if(directory == ".")
+            dir = RootDirectory;
+        else
+            return loaded;
+    }
+    else if(directory.front() == '/' || directory.front() == '\\')
+        return loaded;
+    else  if(directory.length() >= 3 && directory[1] == ':' && (directory[2] == '/' || directory[2] == '\\'))
+        return loaded;
+    else  if(directory.length() >= 2 && directory[1] == ':')
+        return loaded;
+    // Directory is always relative to .game path
+    else
+        dir = RootDirectory + directory;
+
+    if(!std::filesystem::exists(dir))
     {
         #if __has_include(<format>)
-        Log::Raw(std::format( "({}) ERROR Directory does not exists", directory));
+        Log::Raw(std::format( "({}) ERROR Directory does not exists", dir));
         #else
-        Log::Raw("(" + directory + ") ERROR Directory does not exists");
+        Log::Raw("(" + dir + ") ERROR Directory does not exists");
         #endif
 
         return loaded;
     }
-    else if(!std::filesystem::is_directory(directory))
+    else if(!std::filesystem::is_directory(dir))
     {
         #if __has_include(<format>)
-        Log::Raw(std::format( "({}) ERROR Not a directory", directory));
+        Log::Raw(std::format( "({}) ERROR Not a directory", dir));
         #else
-        Log::Raw("(" + directory + ") ERROR Not a directory");
+        Log::Raw("(" + dir + ") ERROR Not a directory");
         #endif
 
         return loaded;
     }
 
-    for(const auto& file : std::filesystem::recursive_directory_iterator(directory))
+    for(const auto& file : std::filesystem::recursive_directory_iterator(dir))
     {
         if(!std::filesystem::is_regular_file(file))
             continue;
 
         total++;
 
-        const std::string extension = Text::ToLower(file.path().extension().string());
+        std::filesystem::path path = file.path();
+        path.make_preferred();
 
-        if(std::find(FontExtensions.begin(), FontExtensions.end(), extension) != FontExtensions.end())
-            loaded += LoadFile<sf::Font>(file.path().string()) ? 1 : 0;
-        else if(std::find(SoundBufferExtensions.begin(), SoundBufferExtensions.end(), extension) != SoundBufferExtensions.end())
-            loaded += LoadFile<sf::SoundBuffer>(file.path().string()) ? 1 : 0;
-        else if(std::find(TextureExtensions.begin(), TextureExtensions.end(), extension) != TextureExtensions.end())
-            loaded += LoadFile<sf::Texture>(file.path().string()) ? 1 : 0;
+        // Set id to *NIX path relative to .game directory
+        std::string id = Text::Replace(path.string().substr(RootDirectory.length()), "\\", "/");
+
+        if(LoadFile(path.string(), id))
+            loaded++;
     }
 
     #if __has_include(<format>)

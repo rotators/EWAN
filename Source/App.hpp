@@ -6,8 +6,6 @@
 #include "Window.hpp"
 
 #include <cstdint>
-#include <string>
-#include <vector>
 
 namespace EWAN
 {
@@ -33,10 +31,6 @@ namespace EWAN
         bool Init();
         void Finish();
 
-        bool InitGameInfo(const std::string& path = ".", const std::string& id = {});
-        bool LoadContent();
         void MainLoop();
-        void ProcessEvents();
-        void ProcessRender();
     };
 }

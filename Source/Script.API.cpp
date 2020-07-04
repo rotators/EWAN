@@ -71,7 +71,8 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
 
     _(ok, engine->RegisterObjectMethod("Content", "void DeleteAll()", as::asMETHOD(Content, DeleteAll), as::asCALL_THISCALL));
     _(ok, engine->RegisterObjectMethod("Content", "size_t Size()", as::asMETHOD(Content, Size), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod("Content", "size_t LoadDirectoruy(const string id)", as::asMETHOD(Content, Size), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Content", "bool LoadFile(const string fileName, const string id)", as::asMETHOD(Content, LoadFile), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Content", "size_t LoadDirectory(const string directory)", as::asMETHOD(Content, LoadDirectory), as::asCALL_THISCALL));
 
     //
 
