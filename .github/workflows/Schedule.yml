@@ -27,14 +27,12 @@ jobs:
           fi
           echo ::set-env name=GHA_EVENT::$event
 
-  - name: Clone
-    if:   github.event.repository.private != 'true'
-    uses: actions/checkout@v2
-    with:
-     token: ${{ secrets.ANTALASKAYA_TOKEN }}
+# - name: Clone
+#   uses: actions/checkout@v2
+#   with:
+#    token: ${{ secrets.ANTALASKAYA_TOKEN }}
 
   - name: Clone
-    if:   github.event.repository.private == 'true'
     uses: actions/checkout@v2
     with:
      token: ${{ secrets.ANTALASKAYA_TOKEN_2 }}
