@@ -90,7 +90,7 @@ jobs:
           git log -p -n 1 2>&1
           echo ::endgroup::
 
-          if [ "$GHA_EVENT" == "schedule" ]; then
+          if [ "$GHA_EVENT" == "schedule" ] || [ "$GHA_EVENT" == "push" ]; then
              echo ::group::git push
              git push 2>&1
              echo ::endgroup::
