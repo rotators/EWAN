@@ -41,7 +41,7 @@ jobs:
 
           if [ -f Source/.clang-format ]; then
              clang_format=$(grep "#!" Source/.clang-format | awk '{print $2}')
-             if [ -n "${clang_format}"]; then
+             if [ -n "${clang_format}" ]; then
                 echo ::set-env name=GHA_CLANG_FORMAT::${clang_format}
 
                 echo ::group::Install ${clang_format}
