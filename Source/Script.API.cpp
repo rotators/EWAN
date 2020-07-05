@@ -4,20 +4,86 @@
 #include "Script.hpp"
 #include "Text.hpp"
 
-static inline void _(bool& ok, int r)
+#include "Libs/SFML.hpp"
+
+#define SCRIPT_REGISTRATION_CHECK
+
+using namespace std::literals::string_literals;
+
+namespace
 {
-    if(ok)
-        ok = r >= 0;
+#if !defined(SCRIPT_REGISTRATION_CHECK)
+    static inline void _(bool& ok, int r)
+    {
+        if(ok)
+            ok = r >= 0;
+    }
+#else
+#define _(ok, expr)                                        \
+do \
+{                                                          \
+    int r = expr;                                          \
+    if(r < 0)                                              \
+    {                                                      \
+        Log::Raw(""s + #expr + " = " + std::to_string(r)); \
+        ok = false;                                        \
+    }                                                      \
+} while(0);
+#endif
+
+    int RegisterContentCache(as::asIScriptEngine* engine, const std::string& cacheName, const std::string& typeName = {})
+    {
+        using namespace EWAN;
+
+        bool ok = true;
+
+        if(typeName.empty())
+        {
+            _(ok, engine->RegisterObjectMethod(cacheName.c_str(), "bool New(const string&in id)", as::asMETHOD(Content::Cache, New), as::asCALL_THISCALL));
+        }
+        else
+        {
+            _(ok, engine->RegisterObjectMethod(cacheName.c_str(), (typeName + " New(const string&in id)").c_str(), as::asMETHOD(Content::Cache, New), as::asCALL_THISCALL));
+        }
+
+        _(ok, engine->RegisterObjectMethod(cacheName.c_str(), "bool   Delete(const string&in id)", as::asMETHOD(Content::Cache, Delete), as::asCALL_THISCALL));
+        _(ok, engine->RegisterObjectMethod(cacheName.c_str(), "size_t DeleteAll()", as::asMETHOD(Content::Cache, DeleteAll), as::asCALL_THISCALL));
+        _(ok, engine->RegisterObjectMethod(cacheName.c_str(), "size_t Size()", as::asMETHOD(Content::Cache, Size), as::asCALL_THISCALL));
+        _(ok, engine->RegisterObjectMethod(cacheName.c_str(), "bool   Exists(const string&in id)", as::asMETHOD(Content::Cache, Exists), as::asCALL_THISCALL));
+
+        if(!typeName.empty())
+        {
+            _(ok, engine->RegisterObjectMethod(cacheName.c_str(), (typeName + " Get(const string&in id, bool silent = true)").c_str(), as::asMETHOD(Content::Cache, Get), as::asCALL_THISCALL));
+        }
+
+        return ok ? 0 : -1;
+    }
 }
 
-static void AppLog(EWAN::App*, std::string text)
+namespace EWAN
 {
-    as::asIScriptContext* context = as::asGetActiveContext();
-    as::asIScriptFunction* function = context->GetFunction();
+    namespace ScriptAPI
+    {
+        void AppLog(App*, std::string text)
+        {
+            as::asIScriptContext* context = as::asGetActiveContext();
+            as::asIScriptFunction* function = context->GetFunction();
 
-    std::string caller = std::string(function->GetModuleName()) + "(" + function->GetScriptSectionName() + ")::" + function->GetName();
+            std::string caller = std::string(function->GetModuleName()) + "(" + function->GetScriptSectionName() + ")::" + function->GetName();
 
-    context->GetEngine()->WriteMessage(caller.c_str(), 0, 0, as::asMSGTYPE_INFORMATION, text.c_str());
+            context->GetEngine()->WriteMessage(caller.c_str(), 0, 0, as::asMSGTYPE_INFORMATION, text.c_str());
+        }
+
+        bool Sprite_SetTexture(sf::Sprite* sprite, const Content& content, const std::string& textureId, bool resetRect)
+        {
+            sf::Texture* texture = content.Texture.GetAs<sf::Texture>(textureId);
+            if(!texture)
+                return false;
+
+            sprite->setTexture(*texture, resetRect);
+            return true;
+        } 
+    }
 }
 
 bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::string& ns/*= "EWAN" */)
@@ -28,51 +94,67 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
     RegisterStdString(engine);
     RegisterStdStringUtils(engine);
 
+    //
+
     _(ok, engine->SetDefaultNamespace(ns.c_str()));
-
-    // Forward declarations
-
-    static const std::vector<const char*> objRefNoHandle = {
-        "App", "Content", "GameInfo", "Script", "Window",
-        "ContentCache", "WindowFPS"
-    };
-
-    for(const auto& obj : objRefNoHandle)
-    {
-        _(ok, engine->RegisterObjectType(obj, 0, as::asOBJ_REF | as::asOBJ_NOHANDLE));
-    }
 
     //
 
+#if !defined(SCRIPT_REGISTRATION_CHECK)
     if constexpr(sizeof(size_t) == 4)
         _(ok, engine->RegisterTypedef("size_t", "uint32"));
     else
         _(ok, engine->RegisterTypedef("size_t", "uint64"));
+#else
+    _(ok, engine->RegisterTypedef("size_t", "uint32"));
+#endif
 
-    //
+    // Forward declarations
+
+    static const std::vector<const char*> zeroObjRefNoHandle = {
+        "App", "Content", "GameInfo", "Script", "Window",
+        "ContentCache", "ContentSprite", "ContentTexture",
+        "WindowFPS",
+    };
+
+    static const std::vector<const char*> zeroObjRefNoCount = {
+        "Sprite", "Texture"
+    };
+
+    for(const auto& obj : zeroObjRefNoHandle)
+    {
+        _(ok, engine->RegisterObjectType(obj, 0, as::asOBJ_REF | as::asOBJ_NOHANDLE));
+    }
+
+    for(const auto& obj : zeroObjRefNoCount)
+    {
+        _(ok, engine->RegisterObjectType(obj, 0, as::asOBJ_REF | as::asOBJ_NOCOUNT));
+    }
+
+    _(ok, RegisterContentCache(engine, "ContentCache"));
+    _(ok, RegisterContentCache(engine, "ContentSprite",  "Sprite@"));
+    _(ok, RegisterContentCache(engine, "ContentTexture", "Texture@"));
+
+    // NOTE: Methods marked with 'SFML' are binding directly to SFML
 
     _(ok, engine->RegisterObjectProperty("App", "      Content  Content", asOFFSET(App, Content)));
     _(ok, engine->RegisterObjectProperty("App", "const GameInfo GameInfo", asOFFSET(App, GameInfo)));
     _(ok, engine->RegisterObjectProperty("App", "const Script   Script", asOFFSET(App, Script)));
     _(ok, engine->RegisterObjectProperty("App", "      Window   Window", asOFFSET(App, Window)));
 
-    _(ok, engine->RegisterObjectMethod( "App", "void Log(const string text) const", as::asFUNCTION(AppLog), as::asCALL_CDECL_OBJFIRST));
+    _(ok, engine->RegisterObjectMethod( "App", "void Log(const string&in text) const", as::asFUNCTION(ScriptAPI::AppLog), as::asCALL_CDECL_OBJFIRST));
 
     //
 
-    _(ok, engine->RegisterObjectMethod("ContentCache", "bool New(const string id)", as::asMETHOD(Content::Cache, New), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod("ContentCache", "bool Delete(const string id)", as::asMETHOD(Content::Cache, Delete), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod("ContentCache", "void DeleteAll()", as::asMETHOD(Content::Cache, DeleteAll), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod("ContentCache", "size_t Size()", as::asMETHOD(Content::Cache, Size), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod("ContentCache", "bool Exists(const string id)", as::asMETHOD(Content::Cache, Exists), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectProperty("Content", "const string   RootDirectory", asOFFSET(Content, RootDirectory)));
+    _(ok, engine->RegisterObjectProperty("Content", "ContentCache   Font", asOFFSET(Content, Font)));
+    _(ok, engine->RegisterObjectProperty("Content", "ContentSprite  Sprite", asOFFSET(Content, Sprite)));
+    _(ok, engine->RegisterObjectProperty("Content", "ContentTexture Texture", asOFFSET(Content, Texture)));
 
-    _(ok, engine->RegisterObjectProperty("Content", "ContentCache Font", asOFFSET(Content, Font)));
-    _(ok, engine->RegisterObjectProperty("Content", "ContentCache Sprite", asOFFSET(Content, Sprite)));
-
-    _(ok, engine->RegisterObjectMethod("Content", "void DeleteAll()", as::asMETHOD(Content, DeleteAll), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Content", "size_t DeleteAll()", as::asMETHOD(Content, DeleteAll), as::asCALL_THISCALL));
     _(ok, engine->RegisterObjectMethod("Content", "size_t Size()", as::asMETHOD(Content, Size), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod("Content", "bool LoadFile(const string fileName, const string id)", as::asMETHOD(Content, LoadFile), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod("Content", "size_t LoadDirectory(const string directory)", as::asMETHOD(Content, LoadDirectory), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Content", "bool LoadFile(const string&in fileName, const string&in id)", as::asMETHOD(Content, LoadFile), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Content", "size_t LoadDirectory(const string&in directory)", as::asMETHOD(Content, LoadDirectory), as::asCALL_THISCALL));
 
     //
 
@@ -84,10 +166,18 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
 
     _(ok, engine->RegisterObjectProperty("Script", "const string RootDirectory", asOFFSET(Script, RootDirectory)));
 
-    _(ok, engine->RegisterObjectMethod("Script", "bool LoadModule(const string fileName, const string moduleName) const", as::asMETHOD(Script,LoadModule_Call), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod("Script", "bool UnloadModule(const string moduleName) const", as::asMETHOD(Script,UnloadModule_Call), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Script", "bool LoadModule(const string&in fileName, const string&in moduleName) const", as::asMETHOD(Script,LoadModule_Call), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Script", "bool UnloadModule(const string&in moduleName) const", as::asMETHOD(Script,UnloadModule_Call), as::asCALL_THISCALL));
 
-    // NOTE: Functions marked with 'SFML' are binding directly to SFML methods
+    //
+
+    _(ok, engine->RegisterObjectMethod("Sprite", "void Move(float xOffset, float yOffset)", as::asMETHODPR(sf::Sprite, move, (float, float), void), as::asCALL_THISCALL)); // SFML Transformable
+    _(ok, engine->RegisterObjectMethod("Sprite", "void SetPosition(float x, float y)", as::asMETHODPR(sf::Sprite, setPosition, (float, float), void), as::asCALL_THISCALL)); // SFML Transformable
+
+    _(ok, engine->RegisterObjectMethod("Sprite", "bool SetTexture(const Texture&in texture, bool resetRect = true) // deprecated", as::asMETHOD(sf::Sprite, setTexture), as::asCALL_THISCALL)); // SFML Sprite
+    _(ok, engine->RegisterObjectMethod("Sprite", "bool SetTexture(const Content&in content, const string&in textureId, bool resetRect = true)", as::asFUNCTION(ScriptAPI::Sprite_SetTexture), as::asCALL_CDECL_OBJFIRST));
+
+    //
 
     _(ok, engine->RegisterEnum("WindowStyle"));
     _(ok, engine->RegisterEnumValue("WindowStyle", "None", sf::Style::None));
@@ -103,6 +193,7 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
 
     _(ok, engine->RegisterObjectMethod("Window", "void Open(uint32 width = 0, uint32 height = 0, uint8 bitsPerPixel = 32, string title = \"\", uint32 style = WindowStyle::Default)", as::asMETHOD(Window, Open_Call), as::asCALL_THISCALL));
     _(ok, engine->RegisterObjectMethod("Window", "void Close()", as::asMETHOD(Window, close), as::asCALL_THISCALL)); // SFML
+    _(ok, engine->RegisterObjectMethod("Window", "bool DrawSprite(const Content&in content, const string&in spriteId)", as::asMETHOD(Window, DrawSprite), as::asCALL_THISCALL));
 
     //
 

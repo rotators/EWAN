@@ -10,18 +10,17 @@ auto main() -> int
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     std::setvbuf(stderr, nullptr, _IONBF, 0);
 
-    EWAN::Log::Raw("BEGIN");
+    EWAN::Log::PrintInfo("BEGIN PROGRAM");
 
     EWAN::App* app = new EWAN::App();
 
-    EWAN::Log::Raw("RUN");
     app->Run();
 
-    EWAN::Log::Raw("DELETE");
+    EWAN::Log::PrintInfo("END PROGRAM");
     delete app;
     app = nullptr;
 
-    EWAN::Log::Raw("END");
+    EWAN::Log::PrintInfo("GOODBYE");
 
     return EXIT_SUCCESS;
 }

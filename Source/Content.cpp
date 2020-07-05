@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <type_traits> // std::is_same
 
 #if __has_include(<format>)
  #include <format>
@@ -353,7 +354,7 @@ EWAN::Content::Content() :
 
 EWAN::Content::~Content()
 {
-    DeleteAll();
+    Finish();
 }
 
 //
@@ -362,31 +363,42 @@ bool EWAN::Content::Init(const GameInfo& game)
 {
     RootDirectory = std::filesystem::path(game.Path).remove_filename().make_preferred().string();
 
+    Log::PrintInfo("Content root directory... " + RootDirectory);
+
     return true;
 }
 
 void EWAN::Content::Finish()
 {
-    DeleteAll();
+    if(Size())
+    {
+        Log::PrintInfo("Content finalization...");
+
+        DeleteAll();
+
+        Log::PrintInfo("Content finalization complete");
+    }
 }
 
 //
 
-void EWAN::Content::DeleteAll()
+size_t EWAN::Content::DeleteAll()
 {
-    Font.DeleteAll();
-    Image.DeleteAll();
-    RenderTexture.DeleteAll();
-    SoundBuffer.DeleteAll();
-    Sprite.DeleteAll();
-    Texture.DeleteAll();
+    size_t size = 0;
+
+    for(auto& cache : {&Font, &Image, &RenderTexture, &SoundBuffer, &Sprite, &Texture})
+    {
+        size += cache->DeleteAll();
+    }
+
+    return size;
 }
 
 size_t EWAN::Content::Size() const
 {
     size_t size = 0;
 
-    for(auto& cache : {&Font, &Image, &RenderTexture, &Sprite, &SoundBuffer, &Texture})
+    for(auto& cache : {&Font, &Image, &RenderTexture, &SoundBuffer, &Sprite, &Texture})
     {
         size += cache->Size();
     }
@@ -452,6 +464,15 @@ bool EWAN::Content::LoadFile(const std::string& filename, const std::string& id)
 {
     const std::string extension = Text::ToLower(std::filesystem::path(filename).extension().string());
 
+    if(!std::filesystem::is_regular_file(filename))
+        return false;
+
+    if(!std::filesystem::exists(filename))
+        return false;
+
+    if(std::filesystem::is_empty(filename))
+        return false;
+
     if(std::find(Font.Extensions.begin(), Font.Extensions.end(), extension) != Font.Extensions.end())
         return LoadFileInternal<sf::Font>(filename, id) != nullptr;
     else if(std::find(SoundBuffer.Extensions.begin(), SoundBuffer.Extensions.end(), extension) != SoundBuffer.Extensions.end())
@@ -512,6 +533,9 @@ size_t EWAN::Content::LoadDirectory(const std::string& directory)
             continue;
 
         total++;
+
+        if(std::filesystem::is_empty(file))
+            continue;
 
         std::filesystem::path path = file.path();
         path.make_preferred();

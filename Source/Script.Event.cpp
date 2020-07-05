@@ -72,7 +72,9 @@ void EWAN::Script::Event::Run(const std::list<as::asIScriptFunction*>& functions
 
 void EWAN::Script::Event::Register(std::list<as::asIScriptFunction*>& functions, as::asIScriptFunction* function, const std::string& name)
 {
-    GetUserData(function->GetEngine())->Script->WriteInfo(function->GetEngine(), "Registered event callback : "s + function->GetDeclaration(true, true, true) + " = " + name + ";", function->GetModuleName());
+    if(GetUserData(function->GetModule())->Debug)
+        WriteInfo(function->GetEngine(), "Registered event callback : "s + function->GetDeclaration(true, true, true) + " = " + name + ";", function->GetModuleName());
+
     functions.push_back(function);
 }
 
@@ -80,6 +82,7 @@ void EWAN::Script::Event::Unregister(as::asIScriptModule* module)
 {
     Unregister(OnBuild, module, "OnBuild");
     Unregister(OnInit, module, "OnInit");
+    Unregister(OnInit, module, "OnFinish");
 
     Unregister(OnDraw, module, "OnDraw");
     Unregister(OnKeyDown, module, "OnKeyDown");
@@ -99,13 +102,15 @@ void EWAN::Script::Event::Unregister(std::list<as::asIScriptFunction*>& function
 
 void EWAN::Script::Event::Unregister(std::list<as::asIScriptFunction*>& functions, as::asIScriptModule* module, const std::string& name)
 {
-    Script* script = GetUserData(module->GetEngine())->Script;
+    const bool debug = GetUserData(module)->Debug;
 
-    functions.remove_if([script, module, name](as::asIScriptFunction* function) -> bool
+    functions.remove_if([debug, module, name](as::asIScriptFunction* function) -> bool
     {
         if(function->GetModule() == module)
         {
-            script->WriteInfo(module->GetEngine(), "Unregistered event callback : "s + function->GetDeclaration(true, true, true) + " = " + name + ";", function->GetModuleName());
+            if(debug)
+                WriteInfo(module->GetEngine(), "Unregistered event callback : "s + function->GetDeclaration(true, true, true) + " = " + name + ";", function->GetModuleName());
+
             return true;
         }
 
@@ -147,6 +152,9 @@ bool EWAN::Script::Event::RunOnInit(as::asIScriptEngine* engine, as::asIScriptFu
     {
         // TODO OnInit event is currently unsafe
 
+        if(GetUserData(function->GetModule())->Debug)
+            WriteInfo(engine, "Run event callback : "s + function->GetDeclaration(true, true, true) + " = OnInit;", function->GetModuleName());
+
         context->Prepare(function);
         context->Execute();
 
@@ -164,4 +172,24 @@ bool EWAN::Script::Event::RunOnInit(as::asIScriptEngine* engine, as::asIScriptFu
     Unregister(OnInit, engine, "OnInit");
 
     return onInit;
+}
+
+void EWAN::Script::Event::RunOnFinish(as::asIScriptEngine* engine)
+{
+    as::asIScriptContext* context = engine->RequestContext();
+
+    for(const auto& function : OnFinish)
+    {
+        if(GetUserData(function->GetModule())->Debug)
+            WriteInfo(engine, "Run event callback : "s + function->GetDeclaration(true, true, true) + " = OnFinish;", function->GetModuleName());
+
+        // OnFinish event should ignore all errors during script execution, if possible
+
+        context->Prepare(function);
+        context->Execute();
+    }
+
+    engine->ReturnContext(context);
+
+    Unregister(OnFinish, engine, "OnFinish");
 }

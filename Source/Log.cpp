@@ -22,15 +22,34 @@ void EWAN::Log::Raw(std::string_view message, const ns_source_location::source_l
 #else
 void EWAN::Log::Raw(std::string_view message)
 {
-    Print(message);
+    sf::Lock lock(COutLock);
+    std::cout << "[???] " << (message.front() != '[' ? " " : "") << message << std::endl;
 }
 #endif
 
-void EWAN::Log::Print(std::string_view message)
+void EWAN::Log::PrintInfo(std::string_view message)
 {
     if(!message.empty())
     {
         sf::Lock lock(COutLock);
-        std::cout << message << std::endl;
+        std::cout << "[INFO]" << (message.front() != '[' ? " " : "") << message << std::endl;
+    }
+}
+
+void EWAN::Log::PrintWarning(std::string_view message)
+{
+    if(!message.empty())
+    {
+        sf::Lock lock(COutLock);
+        std::cout << "[WARNING]" << (message.front() != '[' ? " " : "") << message << std::endl;
+    }
+}
+
+void EWAN::Log::PrintError(std::string_view message)
+{
+    if(!message.empty())
+    {
+        sf::Lock lock(COutLock);
+        std::cout << "[ERROR]" << (message.front() != '[' ? " " : "") << message << std::endl;
     }
 }

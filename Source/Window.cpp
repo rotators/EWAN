@@ -3,11 +3,16 @@
 #include "Script.hpp"
 #include "Window.hpp"
 
-#include <algorithm>
+#include <algorithm> // std::clamp
 
 EWAN::Window::Window() :
     sf::RenderWindow()
 {}
+
+EWAN::Window::~Window()
+{
+    Finish();
+}
 
 //
 
@@ -23,7 +28,13 @@ bool EWAN::Window::Init(EWAN::Content& content)
 void EWAN::Window::Finish()
 {
     if(isOpen())
+    {
+        Log::PrintInfo("Window finalization...");
+
         close();
+
+        Log::PrintInfo("Window finalization complete");
+    }
 }
 
 //
@@ -131,7 +142,7 @@ void EWAN::Window::Render(Script& script)
 
     // always last
 
-    if(FPS.Visible)
+    if(FPS.Visible && FPS.Min != uint16_t(-1))
     {
         FPS.Text.setString(std::to_string(FPS.Min) + " " + std::to_string(FPS.Count) + " " + std::to_string(FPS.Max));
         draw(FPS.Text);

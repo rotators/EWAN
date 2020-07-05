@@ -61,7 +61,7 @@ bool EWAN::GameInfo::Init(const std::string& path /*= "." */, const std::string&
         {
             if(id.empty() || id == Name)
             {
-                Log::Raw("GameInfo selected : " + Name + " -> " + Path);
+                Log::PrintInfo("Game manifest filename... " + Path + " (" + Name + ")");
                 return true;
             }
 
@@ -80,7 +80,9 @@ bool EWAN::GameInfo::Init(const std::string& path /*= "." */, const std::string&
 }
 
 void EWAN::GameInfo::Finish()
-{}
+{
+    Clear(true);
+}
 
 //
 
@@ -117,8 +119,6 @@ bool EWAN::GameInfo::FromJSON(const nl::json& json)
     JSON::FromJSON(json, "/name", Name);
     JSON::FromJSON(json, "/type", Type, true);
     JSON::FromJSON(json, "/script/init", ScriptInit);
-
-    Log::Raw(ToJSON().dump());
 
     return true;
 }

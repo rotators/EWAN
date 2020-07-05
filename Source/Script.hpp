@@ -62,6 +62,7 @@ namespace EWAN
 
             std::list<as::asIScriptFunction*> OnBuild;
             std::list<as::asIScriptFunction*> OnInit;
+            std::list<as::asIScriptFunction*> OnFinish;
 
             // Regular events
 
@@ -81,6 +82,7 @@ namespace EWAN
             bool Run(as::asIScriptContext* context);
             bool RunOnBuild(as::asIScriptModule* module);
             bool RunOnInit(as::asIScriptEngine* engine, as::asIScriptFunction*& function);
+            void RunOnFinish(as::asIScriptEngine* engine);
 
             template<typename... Args>
             bool Run(std::list<as::asIScriptFunction*>& functions, Args&&... args)
@@ -158,6 +160,10 @@ namespace EWAN
         static UserData::Function* GetUserData(as::asIScriptFunction* function);
         static UserData::Module* GetUserData(as::asIScriptModule* module);
 
+        static void WriteInfo(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
+        static void WriteWarning(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
+        static void WriteError(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
+
         bool LoadModule(as::asIScriptEngine* engine, const std::string& fileName, const std::string& moduleName);
         bool LoadModule_Call(const std::string& fileName, const std::string& moduleName);
         bool LoadInitModule(const GameInfo& game, as::asIScriptEngine* engine);
@@ -174,10 +180,6 @@ namespace EWAN
         void DestroyEngine(as::asIScriptEngine*& engine);
 
     public:
-        void WriteInfo(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
-        void WriteWarning(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
-        void WriteError(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
-
         int CallbackInclude(Builder& builder, const std::string& include, const std::string& fromSection, void* data);
         void CallbackMessage(const as::asSMessageInfo& msg);
         int CallbackPragma(Builder& builder, const std::string& pragmaText, void* data);

@@ -26,21 +26,28 @@ bool EWAN::Script::Init(App* app)
 {
     RootDirectory = std::filesystem::path(app->GameInfo.Path).replace_filename(app->GameInfo.ScriptInit).remove_filename().make_preferred().string();
 
-    Log::Print("[INFO] Script initialization... AngelScript v"s + as::asGetLibraryVersion() + as::asGetLibraryOptions());
-    Log::Print("[INFO] Script root directory... " + RootDirectory);
+    Log::PrintInfo("Script root directory...  " + RootDirectory);
+    Log::PrintInfo("Script initialization...  AngelScript v"s + as::asGetLibraryVersion() + as::asGetLibraryOptions());
+ 
+    const std::string fail = "Script initialization failed... ";
 
     as::asIScriptEngine* engine = CreateEngine();
     if(!engine)
+    {
+        Log::PrintError( fail + "cannot create engine");
         return false;
+    }
 
     if(!InitAPI(app, engine))
     {
+        WriteError(engine, fail + "cannot register API");
         DestroyEngine(engine);
         return false;
     }
 
     if(!LoadInitModule(app->GameInfo, engine))
     {
+        WriteError(engine, fail + "cannot load init module");
         DestroyEngine(engine);
         return false;
     }
@@ -49,7 +56,7 @@ bool EWAN::Script::Init(App* app)
 
     if(!BindImportedFunctions(engine))
     {
-        WriteError(engine, "Script initialization failed... cannot bind all imported functions");
+        WriteError(engine, fail + "cannot bind all imported functions");
         DestroyEngine(engine);
         return false;
     }
@@ -60,7 +67,7 @@ bool EWAN::Script::Init(App* app)
         as::asIScriptFunction* falseFunction = nullptr;
         if(!Event.RunOnInit(engine, falseFunction))
         {
-            WriteError(engine, "Script initialization failed... "s + falseFunction->GetDeclaration(true, true, true) + " = false", falseFunction->GetModuleName());
+            WriteError(engine, fail + falseFunction->GetDeclaration(true, true, true) + " = false", falseFunction->GetModuleName());
             DestroyEngine(engine);
             return false;
         }
@@ -93,7 +100,14 @@ bool EWAN::Script::Init(App* app)
 void EWAN::Script::Finish()
 {
     if(AS)
+    {
+        Log::PrintInfo("Script finalization...");
+
+        Event.RunOnFinish(AS);
         DestroyEngine(AS);
+
+        Log::PrintInfo("Script finalization complete");
+    }
 }
 
 //
@@ -116,6 +130,23 @@ void EWAN::Script::Finish()
 /* static */EWAN::Script::UserData::Module* EWAN::Script::GetUserData(as::asIScriptModule* module)
 {
     return static_cast<UserData::Module*>(module->GetUserData(0));
+}
+
+//
+
+/* static */ void EWAN::Script::WriteInfo(as::asIScriptEngine* engine, const std::string& message, const std::string& section /*= {} */, int row /*= 0 */, int col /*= 0 */)
+{
+    engine->WriteMessage(section.c_str(), row, col, as::asMSGTYPE_INFORMATION, message.c_str());
+}
+
+/* static */ void EWAN::Script::WriteWarning(as::asIScriptEngine* engine, const std::string& message, const std::string& section /*= {} */, int row /*= 0 */, int col /*= 0 */)
+{
+    engine->WriteMessage(section.c_str(), row, col, as::asMSGTYPE_WARNING, message.c_str());
+}
+
+/* static */ void EWAN::Script::WriteError(as::asIScriptEngine* engine, const std::string& message, const std::string& section /*= {} */, int row /*= 0 */, int col /*= 0 */)
+{
+    engine->WriteMessage(section.c_str(), row, col, as::asMSGTYPE_ERROR, message.c_str());
 }
 
 //
@@ -257,8 +288,8 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
     //
     // Event definition                                               Script code
     // ------------------------------------------------------------------------------------------------
-    // {"OnExample", {{"void"}, Event.Example}} ..................... [OnExample] void f();
-    // {"OnHappens", {{"bool"}, Event.Happens}} ..................... [OnHappens] bool f();
+    // {"OnExample", {{"void"}, Event.Example}} ..................... [OnExample] void  f();
+    // {"OnHappens", {{"bool"}, Event.Happens}} ..................... [OnHappens] bool  f();
     // {"OnTrigger", {{"float", "string", "int"}, Event.Trigger}} ... [OnTrigger] float f(string, int);
     //
     // Note that while single function can handle any amount of engine events (as long their signatures are compatibile),
@@ -268,6 +299,7 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
     static const std::unordered_map<std::string, Event::Data> eventData = {
         {"OnBuild", {{"void"}, Event.OnBuild}},
         {"OnInit", {{"bool"}, Event.OnInit}},
+        {"OnFinish", {{"void"}, Event.OnFinish}},
 
         {"OnDraw", {{"void"}, Event.OnDraw}}
     };
@@ -368,15 +400,9 @@ as::asIScriptContext* EWAN::Script::CreateContext(as::asIScriptEngine*)
 
 as::asIScriptEngine* EWAN::Script::CreateEngine()
 {
-    Log::Print("[INFO] Creating script engine...");
-
     as::asIScriptEngine* engine = as::asCreateScriptEngine();
     if(!engine)
-    {
-        Log::Print("[ERROR] Cannot create script engine");
-
         return nullptr;
-    }
 
     if(!InitMessageCallback(engine))
     {
@@ -421,34 +447,13 @@ as::asIScriptEngine* EWAN::Script::CreateEngine()
 
 void EWAN::Script::DestroyEngine(as::asIScriptEngine*& engine)
 {
-    WriteInfo(engine, "Destroying script engine...");
-
-    for(as::asUINT m=0, mLen=engine->GetModuleCount(); m<mLen; m++)
+    for(as::asUINT m=0, mLen = engine->GetModuleCount(); m<mLen; m++)
     {
         Event.Unregister(engine->GetModuleByIndex(m));
     }
 
     engine->ShutDownAndRelease();
     engine = nullptr;
-
-    Log::Print("[INFO] Destroying script engine complete");
-}
-
-//
-
-void EWAN::Script::WriteInfo(as::asIScriptEngine* engine, const std::string& message, const std::string& section /*= {} */, int row /*= 0 */, int col /*= 0 */)
-{
-    engine->WriteMessage(section.c_str(), row, col, as::asMSGTYPE_INFORMATION, message.c_str());
-}
-
-void EWAN::Script::WriteWarning(as::asIScriptEngine* engine, const std::string& message, const std::string& section /*= {} */, int row /*= 0 */, int col /*= 0 */)
-{
-    engine->WriteMessage(section.c_str(), row, col, as::asMSGTYPE_WARNING, message.c_str());
-}
-
-void EWAN::Script::WriteError(as::asIScriptEngine* engine, const std::string& message, const std::string& section /*= {} */, int row /*= 0 */, int col /*= 0 */)
-{
-    engine->WriteMessage(section.c_str(), row, col, as::asMSGTYPE_ERROR, message.c_str());
 }
 
 //
@@ -484,8 +489,10 @@ int EWAN::Script::CallbackInclude(Builder& builder, const std::string& include, 
 
 void EWAN::Script::CallbackMessage(const as::asSMessageInfo& msg)
 {
-    static const std::string type[3] = { "ERROR", "WARNING", "INFO" };
-    std::string log = "[" + type[msg.type] + "]", section = msg.section, message = msg.message;
+    static const std::function<void(std::string_view)> functions[3] = { &Log::PrintError, &Log::PrintWarning, &Log::PrintInfo };
+    std::function<void(std::string_view)> function = functions[msg.type];
+
+    std::string log, section = msg.section;
     bool numbers = msg.row > 0 || msg.col > 0;
 
     if(!section.empty() || numbers)
@@ -501,10 +508,12 @@ void EWAN::Script::CallbackMessage(const as::asSMessageInfo& msg)
         log += "]";
     }
 
-    if(!message.empty())
-        log += " " +message;
+    if(log.empty())
+        log = msg.message;
+    else
+        log += " "s + msg.message;
 
-    Log::Print(log);
+    function(log);
 }
 
 int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText, void* data)
@@ -542,17 +551,6 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
                 WriteInfo(engine, "Module option : debug", module->GetName());
             }
         }
-        else if(pragma == "name" && pragmargs.size() == 1)
-        {
-            if(engine->GetModule(pragmargs.front().c_str(), as::asGM_ONLY_IF_EXISTS) != nullptr)
-            {
-                WriteError(engine, "Module name already in use : " + pragmargs.front());
-                return -1;
-            }
-
-            WriteInfo(engine, "Rename module : "s + pragmargs.front(), module->GetName());
-            module->SetName(pragmargs.front().c_str());
-        }
         else if(pragma == "optional" && pragmargs.empty())
         {
             UserData::Module* moduleData = GetUserData(module);
@@ -570,6 +568,17 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
                 moduleData->Poison = true;
                 WriteInfo(engine, "Module option : poisoned", module->GetName());
             }
+        }
+        else if(pragma == "rename" && pragmargs.size() == 1)
+        {
+            if(engine->GetModule(pragmargs.front().c_str(), as::asGM_ONLY_IF_EXISTS) != nullptr)
+            {
+                WriteError(engine, "Module name already in use : " + pragmargs.front());
+                return -1;
+            }
+
+            WriteInfo(engine, "Rename module : "s + pragmargs.front(), module->GetName());
+            module->SetName(pragmargs.front().c_str());
         }
         else if(pragma == "unload" && pragmargs.empty())
         {

@@ -27,6 +27,8 @@ namespace EWAN
         static void Raw(std::string_view message);
     #endif
 
-    static void Print(std::string_view message);
+    static void PrintInfo(std::string_view message);
+    static void PrintWarning(std::string_view message);
+    static void PrintError(std::string_view message);
     };
 }

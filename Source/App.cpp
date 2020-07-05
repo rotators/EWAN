@@ -1,6 +1,8 @@
 #include "App.hpp"
 #include "Log.hpp"
 
+#include <type_traits> // std::is_same
+
 #if __has_include(<format>)
  #include <format>
 #endif
@@ -30,22 +32,17 @@ void EWAN::App::Run()
 
 bool EWAN::App::Init()
 {
-    Log::Raw("Init");
     Finished = false;
 
-    Log::Raw("GameInfo...");
     if(!GameInfo.Init())
         return false;
 
-    Log::Raw("Content...");
     if(!Content.Init(GameInfo))
         return false;
 
-    Log::Raw("Window...");
     if(!Window.Init(Content))
         return false;
 
-    Log::Raw("Script...");
     if(!Script.Init(this))
         return false;
 
@@ -54,19 +51,11 @@ bool EWAN::App::Init()
 
 void EWAN::App::Finish()
 {
-    Log::Raw("Finish");
     Finished = true;
 
-    Log::Raw("Script...");
     Script.Finish();
-
-    Log::Raw("Window...");
     Window.Finish();
-
-    Log::Raw("Content...");
     Content.Finish();
-
-    Log::Raw("GameInfo...");
     GameInfo.Finish();
 }
 
@@ -74,7 +63,7 @@ void EWAN::App::Finish()
 
 void EWAN::App::MainLoop()
 {
-    Log::Raw("BEGIN");
+    Log::PrintInfo("BEGIN MAIN LOOP");
 
     Window.FPS.Clock.restart();
 
@@ -94,7 +83,7 @@ void EWAN::App::MainLoop()
             break;
     }
 
-    Log::Raw("END");
+    Log::PrintInfo("END MAIN LOOP");
 }
 
 //
@@ -123,11 +112,17 @@ namespace EWAN
         info<sf::Window>();
         #endif
 
-        #if 0
-        static_assert(sizeof(App)       == 1256);
-        static_assert(sizeof(Content)   == 400);
-        static_assert(sizeof(Settings)  == 8);
-        static_assert(sizeof(Window)    == 840);
-        #endif
+        static_assert(std::is_same<int8_t, sf::Int8>::value);
+        static_assert(std::is_same<int16_t, sf::Int16>::value);
+        static_assert(std::is_same<int32_t, sf::Int32>::value);
+        static_assert(std::is_same<int64_t, sf::Int64>::value);
+
+        static_assert(std::is_same<uint8_t, sf::Uint8>::value);
+        static_assert(std::is_same<uint16_t, sf::Uint16>::value);
+        static_assert(std::is_same<uint32_t, sf::Uint32>::value);
+        static_assert(std::is_same<uint64_t, sf::Uint64>::value);
+
+        static_assert(std::is_same<uint8_t, as::asBYTE>::value);
+        static_assert(std::is_same<uint32_t, as::asUINT>::value);
     }
 }

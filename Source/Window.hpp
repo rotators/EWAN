@@ -32,6 +32,7 @@ namespace EWAN
 
     public:
         Window();
+        virtual ~Window();
 
     public:
         bool Init(Content& content);

@@ -28,7 +28,7 @@ namespace EWAN
         public:
             const std::string Name;
 
-            // Used by Content::LoadFile()/LoadDirectory() to guess target cache
+            // Used by Content::LoadFile() to guess target cache
             std::vector<std::string> Extensions;
 
         protected:
@@ -110,15 +110,14 @@ namespace EWAN
         };
 
     public:
+        std::string RootDirectory;
+
         Cache Font;
         Cache Image;
         Cache RenderTexture;
         Cache SoundBuffer;
         Cache Sprite;
         Cache Texture;
-
-    protected:
-        std::string RootDirectory;
 
     public:
         Content();
@@ -129,7 +128,7 @@ namespace EWAN
         void Finish();
 
         // Deletes stored data in all caches
-        void DeleteAll();
+        size_t DeleteAll();
 
         // Returns total size of all caches
         size_t Size() const;
