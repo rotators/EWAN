@@ -1,15 +1,15 @@
 #include "GameInfo.hpp"
+
 #include "Log.hpp"
 #include "Text.hpp"
 
 #include <filesystem>
 
 static const EWAN::JSON::Schema GameInfoSchema = {
-    { "/name",  "string" },
-    { "/type?", "string?" },
-    { "/script", "object" },
-    { "/script/init", "string"}
-};
+    {"/name", "string"},
+    {"/type?", "string?"},
+    {"/script", "object"},
+    {"/script/init", "string"}};
 
 bool EWAN::GameInfo::Init(const std::string& path /*= "." */, const std::string& id /*= {}*/)
 {
@@ -36,7 +36,7 @@ bool EWAN::GameInfo::Init(const std::string& path /*= "." */, const std::string&
         if(!std::filesystem::is_regular_file(file))
             continue;
 
-        if(Text::ToLower(file.path().extension().string() ) != ".game")
+        if(Text::ToLower(file.path().extension().string()) != ".game")
             continue;
 
         files.emplace_back(std::filesystem::absolute(file.path()).make_preferred().string());
@@ -99,12 +99,10 @@ void EWAN::GameInfo::Clear(bool full /*= false */)
 nl::json EWAN::GameInfo::ToJSON()
 {
     nl::json json = {
-        { "name", Name },
-        { "type", Type },
-        { "script",
-            { "init", ScriptInit }
-        }
-    };
+        {"name", Name},
+        {"type", Type},
+        {"script",
+         {"init", ScriptInit}}};
 
     return json;
 }

@@ -1,8 +1,8 @@
 #include "App.hpp"
 #include "Log.hpp"
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 
 auto main() -> int
 {

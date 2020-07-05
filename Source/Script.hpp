@@ -20,7 +20,7 @@ namespace EWAN
         public:
             Builder();
 
-            int StartNewModule(as::asIScriptEngine* inEngine, const char *moduleName);
+            int StartNewModule(as::asIScriptEngine* inEngine, const char* moduleName);
 
             std::map<int, std::vector<std::string>>& GetAllMetadataForType();
             std::map<int, std::vector<std::string>>& GetAllMetadataForFunc();
@@ -32,7 +32,7 @@ namespace EWAN
         class Callback
         {
         public:
-            static int Include(const char *include, const char *from, as::CScriptBuilder* builder, void* data);
+            static int Include(const char* include, const char* from, as::CScriptBuilder* builder, void* data);
             static int Pragma(const std::string& pragmaText, as::CScriptBuilder& builder, void* data);
 
             static void ContextUserDataCleanup(as::asIScriptContext* context);
@@ -47,7 +47,7 @@ namespace EWAN
             class Data
             {
             public:
-                std::list<std::string> Params;
+                std::list<std::string>             Params;
                 std::list<as::asIScriptFunction*>& List;
 
             public:
@@ -102,7 +102,6 @@ namespace EWAN
                         result = false;
                         break;
                     }
-
                 }
 
                 context->GetEngine()->ReturnContext(context);
@@ -129,20 +128,20 @@ namespace EWAN
 
             struct Module
             {
-                bool Debug = false;
+                bool Debug    = false;
                 bool Optional = false;
-                bool Poison = false;
-                bool Unload = false;
+                bool Poison   = false;
+                bool Unload   = false;
             };
         };
 
-    //
+        //
 
     public:
         EWAN::Script::Event Event;
 
     private:
-        std::string RootDirectory;
+        std::string          RootDirectory;
         as::asIScriptEngine* AS = nullptr;
 
     public:
@@ -155,10 +154,10 @@ namespace EWAN
         bool InitMessageCallback(as::asIScriptEngine* engine);
         void Finish();
 
-        static UserData::Context* GetUserData(as::asIScriptContext* context);
-        static UserData::Engine* GetUserData(as::asIScriptEngine* engine);
+        static UserData::Context*  GetUserData(as::asIScriptContext* context);
+        static UserData::Engine*   GetUserData(as::asIScriptEngine* engine);
         static UserData::Function* GetUserData(as::asIScriptFunction* function);
-        static UserData::Module* GetUserData(as::asIScriptModule* module);
+        static UserData::Module*   GetUserData(as::asIScriptModule* module);
 
         static void WriteInfo(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
         static void WriteWarning(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
@@ -173,15 +172,15 @@ namespace EWAN
         bool LoadModuleMetadata(Builder& builder);
 
     protected:
-        bool BindImportedFunctions(as::asIScriptEngine* engine);
-        bool BindImportedFunctions(as::asIScriptModule* module);
+        bool                  BindImportedFunctions(as::asIScriptEngine* engine);
+        bool                  BindImportedFunctions(as::asIScriptModule* module);
         as::asIScriptContext* CreateContext(as::asIScriptEngine* engine);
-        as::asIScriptEngine* CreateEngine();
-        void DestroyEngine(as::asIScriptEngine*& engine);
+        as::asIScriptEngine*  CreateEngine();
+        void                  DestroyEngine(as::asIScriptEngine*& engine);
 
     public:
-        int CallbackInclude(Builder& builder, const std::string& include, const std::string& fromSection, void* data);
+        int  CallbackInclude(Builder& builder, const std::string& include, const std::string& fromSection, void* data);
         void CallbackMessage(const as::asSMessageInfo& msg);
-        int CallbackPragma(Builder& builder, const std::string& pragmaText, void* data);
+        int  CallbackPragma(Builder& builder, const std::string& pragmaText, void* data);
     };
 }

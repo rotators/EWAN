@@ -1,4 +1,5 @@
 #include "Content.hpp"
+
 #include "Log.hpp"
 #include "Text.hpp"
 
@@ -7,7 +8,7 @@
 #include <type_traits> // std::is_same
 
 #if __has_include(<format>)
- #include <format>
+#    include <format>
 #endif
 
 // Remember to wear protective goggles :)
@@ -89,11 +90,11 @@ EWAN::Content::Cache::~Cache()
     {
         sf::Lock lock(CacheLock);
 
-        #if __has_include(<format>)
+#if __has_include(<format>)
         Log::Raw(std::format("WARNING : Size={}", CacheMap.size()));
-        #else
+#else
         Log::Raw("WARNING : Size=" + std::to_string(CacheMap.size()));
-        #endif
+#endif
 
         DeleteAll();
     }
@@ -111,21 +112,21 @@ EWAN::Content::Info* EWAN::Content::Cache::Attach(const std::string& id, void* d
     }
     else if(Exists(id))
     {
-        #if __has_include(<format>)
+#if __has_include(<format>)
         Log::Raw(std::format("({}) ERROR : ID already in use", id));
-        #else
+#else
         Log::Raw("(" + id + ") ERROR : ID already in use");
-        #endif
+#endif
 
         return nullptr;
     }
     else if(!data)
     {
-        #if __has_include(<format>)
+#if __has_include(<format>)
         Log::Raw(std::format("({}) ERROR : Null data", id));
-        #else
+#else
         Log::Raw("(" + id + ") ERROR : Null data");
-        #endif
+#endif
 
         return nullptr;
     }
@@ -209,7 +210,7 @@ size_t EWAN::Content::Cache::DeleteAll()
     for(const auto& it : CacheMap)
     {
         CallbackDelete(std::get<0>(it.second)); // data
-        delete std::get<1>(it.second); // info
+        delete std::get<1>(it.second);          // info
         count++;
     }
 
@@ -225,16 +226,16 @@ size_t EWAN::Content::Cache::Move(Cache& other)
 
     sf::Lock lockSelf(CacheLock);
     sf::Lock lockOther(other.CacheLock);
-    size_t moved = 0;
+    size_t   moved = 0;
 
     std::vector<std::string> keys = Keys();
-    void* data;
-    Info* info;
+    void*                    data;
+    Info*                    info;
 
     for(const auto& key : keys)
     {
         if(Detach(key, data, info))
-        { 
+        {
             moved += other.Attach(key, data, info) ? 1 : 0;
         }
     }
@@ -281,11 +282,11 @@ void* EWAN::Content::Cache::Get(const std::string& id, bool silent /*= false */)
 
     if(!silent)
     {
-        #if __has_include(<format>)
+#if __has_include(<format>)
         Log::Raw(std::format("({}) ERROR", id));
-        #else
+#else
         Log::Raw("(" + id + ") ERROR");
-        #endif
+#endif
     }
 
     return nullptr;
@@ -298,16 +299,16 @@ const EWAN::Content::Info* EWAN::Content::Cache::GetInfo(const std::string& id, 
     auto it = CacheMap.find(id);
     if(it != CacheMap.end())
         return std::get<1>(it->second);
-    
+
     // Error handling intentionally left blank
 
     if(!silent)
     {
-        #if __has_include(<format>)
+#if __has_include(<format>)
         Log::Raw(std::format("({}) ERROR", id));
-        #else
+#else
         Log::Raw("(" + id + ") ERROR");
-        #endif
+#endif
     }
 
     return nullptr;
@@ -411,17 +412,17 @@ size_t EWAN::Content::Size() const
 template<typename T>
 EWAN::Content::Cache& EWAN::Content::GetCache()
 {
-    if constexpr(std::is_same_v<T,sf::Font>)
+    if constexpr(std::is_same_v<T, sf::Font>)
         return Font;
-    else if constexpr(std::is_same_v<T,sf::Image>)
+    else if constexpr(std::is_same_v<T, sf::Image>)
         return Image;
-    else if constexpr(std::is_same_v<T,sf::RenderTexture>)
+    else if constexpr(std::is_same_v<T, sf::RenderTexture>)
         return RenderTexture;
-    else if constexpr(std::is_same_v<T,sf::SoundBuffer>)
+    else if constexpr(std::is_same_v<T, sf::SoundBuffer>)
         return SoundBuffer;
-    else if constexpr(std::is_same_v<T,sf::Sprite>)
+    else if constexpr(std::is_same_v<T, sf::Sprite>)
         return Sprite;
-    else if constexpr(std::is_same_v<T,sf::Texture>)
+    else if constexpr(std::is_same_v<T, sf::Texture>)
         return Texture;
 }
 
@@ -436,22 +437,22 @@ T* EWAN::Content::LoadFileInternal(const std::string& filename, const std::strin
 {
     // Check if id is already in use
     Cache& cache = GetCache<T>();
-    T* data = cache.GetAs<T>(id, true);
+    T*     data  = cache.GetAs<T>(id, true);
 
     if(data)
         return data;
 
     // create SFML object
-    data = new T(); 
+    data = new T();
 
     if(data->loadFromFile(filename) && cache.Attach(id, data))
         return data;
 
-    #if __has_include(<format>)
+#if __has_include(<format>)
     Log::Raw(std::format("({}) ERROR", id));
-    #else
+#else
     Log::Raw("(" + id + ") ERROR");
-    #endif
+#endif
 
     delete data;
 
@@ -486,7 +487,7 @@ bool EWAN::Content::LoadFile(const std::string& filename, const std::string& id)
 size_t EWAN::Content::LoadDirectory(const std::string& directory)
 {
     std::string dir;
-    size_t loaded = 0, total = 0;
+    size_t      loaded = 0, total = 0;
 
     // Disallow escaping .game path
     if(directory.front() == '.')
@@ -498,9 +499,9 @@ size_t EWAN::Content::LoadDirectory(const std::string& directory)
     }
     else if(directory.front() == '/' || directory.front() == '\\')
         return loaded;
-    else  if(directory.length() >= 3 && directory[1] == ':' && (directory[2] == '/' || directory[2] == '\\'))
+    else if(directory.length() >= 3 && directory[1] == ':' && (directory[2] == '/' || directory[2] == '\\'))
         return loaded;
-    else  if(directory.length() >= 2 && directory[1] == ':')
+    else if(directory.length() >= 2 && directory[1] == ':')
         return loaded;
     // Directory is always relative to .game path
     else
@@ -508,21 +509,21 @@ size_t EWAN::Content::LoadDirectory(const std::string& directory)
 
     if(!std::filesystem::exists(dir))
     {
-        #if __has_include(<format>)
-        Log::Raw(std::format( "({}) ERROR Directory does not exists", dir));
-        #else
+#if __has_include(<format>)
+        Log::Raw(std::format("({}) ERROR Directory does not exists", dir));
+#else
         Log::Raw("(" + dir + ") ERROR Directory does not exists");
-        #endif
+#endif
 
         return loaded;
     }
     else if(!std::filesystem::is_directory(dir))
     {
-        #if __has_include(<format>)
-        Log::Raw(std::format( "({}) ERROR Not a directory", dir));
-        #else
+#if __has_include(<format>)
+        Log::Raw(std::format("({}) ERROR Not a directory", dir));
+#else
         Log::Raw("(" + dir + ") ERROR Not a directory");
-        #endif
+#endif
 
         return loaded;
     }
@@ -547,11 +548,11 @@ size_t EWAN::Content::LoadDirectory(const std::string& directory)
             loaded++;
     }
 
-    #if __has_include(<format>)
+#if __has_include(<format>)
     Log::Raw(std::format("{}/{} files", loaded, total));
-    #else
+#else
     Log::Raw(std::to_string(loaded) + "/" + std::to_string(total) + " files");
-    #endif
+#endif
 
     return loaded;
 }

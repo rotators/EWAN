@@ -1,6 +1,7 @@
+#include "Script.hpp"
+
 #include "App.hpp"
 #include "Log.hpp"
-#include "Script.hpp"
 #include "Text.hpp"
 #include "Utils.hpp"
 
@@ -28,13 +29,13 @@ bool EWAN::Script::Init(App* app)
 
     Log::PrintInfo("Script root directory...  " + RootDirectory);
     Log::PrintInfo("Script initialization...  AngelScript v"s + as::asGetLibraryVersion() + as::asGetLibraryOptions());
- 
+
     const std::string fail = "Script initialization failed... ";
 
     as::asIScriptEngine* engine = CreateEngine();
     if(!engine)
     {
-        Log::PrintError( fail + "cannot create engine");
+        Log::PrintError(fail + "cannot create engine");
         return false;
     }
 
@@ -76,7 +77,7 @@ bool EWAN::Script::Init(App* app)
     // Unload modules which requested it with `#pragma module unload`
     {
         std::vector<as::asIScriptModule*> allModules;
-        for(as::asUINT m=0, mLen=engine->GetModuleCount(); m<mLen; m++)
+        for(as::asUINT m = 0, mLen = engine->GetModuleCount(); m < mLen; m++)
         {
             allModules.push_back(engine->GetModuleByIndex(m));
         }
@@ -117,17 +118,17 @@ void EWAN::Script::Finish()
     return static_cast<UserData::Context*>(context->GetUserData(0));
 }
 
-/* static */EWAN::Script::UserData::Engine* EWAN::Script::GetUserData(as::asIScriptEngine* engine)
+/* static */ EWAN::Script::UserData::Engine* EWAN::Script::GetUserData(as::asIScriptEngine* engine)
 {
     return static_cast<UserData::Engine*>(engine->GetUserData(0));
 }
 
-/* static */EWAN::Script::UserData::Function* EWAN::Script::GetUserData(as::asIScriptFunction* function)
+/* static */ EWAN::Script::UserData::Function* EWAN::Script::GetUserData(as::asIScriptFunction* function)
 {
     return static_cast<UserData::Function*>(function->GetUserData(0));
 }
 
-/* static */EWAN::Script::UserData::Module* EWAN::Script::GetUserData(as::asIScriptModule* module)
+/* static */ EWAN::Script::UserData::Module* EWAN::Script::GetUserData(as::asIScriptModule* module)
 {
     return static_cast<UserData::Module*>(module->GetUserData(0));
 }
@@ -192,11 +193,11 @@ bool EWAN::Script::LoadModule(as::asIScriptEngine* engine, const std::string& fi
 
     // Optional modules does not inform caller about failure
     bool optional = GetUserData(module)->Optional;
-    r = builder.BuildModule();
+    r             = builder.BuildModule();
     if(r < 0)
         return optional;
 
-    for(as::asUINT f=0, fLen=module->GetFunctionCount(); f<fLen; f++)
+    for(as::asUINT f = 0, fLen = module->GetFunctionCount(); f < fLen; f++)
     {
         module->GetFunctionByIndex(f)->SetUserData(new UserData::Function, 0);
     }
@@ -240,7 +241,7 @@ bool EWAN::Script::UnloadModule(as::asIScriptModule*& module)
     as::asIScriptContext* context = as::asGetActiveContext();
     if(context)
     {
-        for(as::asUINT f = 0, fLen=context->GetCallstackSize(); f<fLen; f++)
+        for(as::asUINT f = 0, fLen = context->GetCallstackSize(); f < fLen; f++)
         {
             if(context->GetFunction(f)->GetModule() == module)
             {
@@ -253,7 +254,7 @@ bool EWAN::Script::UnloadModule(as::asIScriptModule*& module)
     WriteInfo(module->GetEngine(), "Unloading module", module->GetName());
 
     Event.Unregister(module);
- 
+
     module->UnbindAllImportedFunctions();
     module->Discard();
     module = nullptr;
@@ -283,7 +284,7 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
     // Event name defines what kind of metadata script function need to have to become event callback
     // Function declaration is stored as string list, which holds return type and function parameters
     // Container is a reference to list of AngelScript functions, holding results of metadata parsing
-    // 
+    //
     // {event}, {{function, declaration, list}, container}
     //
     // Event definition                                               Script code
@@ -301,8 +302,7 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
         {"OnInit", {{"bool"}, Event.OnInit}},
         {"OnFinish", {{"void"}, Event.OnFinish}},
 
-        {"OnDraw", {{"void"}, Event.OnDraw}}
-    };
+        {"OnDraw", {{"void"}, Event.OnDraw}}};
 
     as::asIScriptEngine* engine = builder.GetEngine();
 
@@ -316,12 +316,12 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
             if(std::find(metadata.second.begin(), metadata.second.end(), event.first) != metadata.second.end())
             {
                 // This is kind of silly way of validating script function signature, but it works, OK?
-                as::asIScriptFunction* function = engine->GetFunctionById(metadata.first);
-                std::string expectedDeclaration = event.second.GetDeclaration(function);
-                as::asIScriptFunction* sameFunction = function->GetModule()->GetFunctionByDecl(expectedDeclaration.c_str());
+                as::asIScriptFunction* function            = engine->GetFunctionById(metadata.first);
+                std::string            expectedDeclaration = event.second.GetDeclaration(function);
+                as::asIScriptFunction* sameFunction        = function->GetModule()->GetFunctionByDecl(expectedDeclaration.c_str());
                 if(function != sameFunction)
                 {
-                    WriteError(engine, "Invalid function signature for engine event : " + event.first +"\nExpected:\n  " + expectedDeclaration + ";\nFound:\n  " + function->GetDeclaration(true, true, false) + ";");
+                    WriteError(engine, "Invalid function signature for engine event : " + event.first + "\nExpected:\n  " + expectedDeclaration + ";\nFound:\n  " + function->GetDeclaration(true, true, false) + ";");
                     return false;
                 }
 
@@ -337,7 +337,7 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
 
 bool EWAN::Script::BindImportedFunctions(as::asIScriptEngine* engine)
 {
-    for(as::asUINT m=0, mLen = engine->GetModuleCount(); m<mLen; m++)
+    for(as::asUINT m = 0, mLen = engine->GetModuleCount(); m < mLen; m++)
     {
         if(!BindImportedFunctions(engine->GetModuleByIndex(m)))
             return false;
@@ -351,11 +351,11 @@ bool EWAN::Script::BindImportedFunctions(as::asIScriptModule* module)
     as::asIScriptEngine* engine = module->GetEngine();
 
     bool result = true;
-    for(as::asUINT f=0, fLen=module->GetImportedFunctionCount(); f<fLen; f++)
+    for(as::asUINT f = 0, fLen = module->GetImportedFunctionCount(); f < fLen; f++)
     {
-        const char* importModuleName = module->GetImportedFunctionSourceModule(f);
+        const char* importModuleName          = module->GetImportedFunctionSourceModule(f);
         const char* importFunctionDeclaration = module->GetImportedFunctionDeclaration(f);
-        std::string importString = "import "s + importFunctionDeclaration + " from \"" + importModuleName + "\"";
+        std::string importString              = "import "s + importFunctionDeclaration + " from \"" + importModuleName + "\"";
 
         as::asIScriptModule* importModule = engine->GetModule(importModuleName, as::asGM_ONLY_IF_EXISTS);
         if(!importModule)
@@ -380,7 +380,7 @@ bool EWAN::Script::BindImportedFunctions(as::asIScriptModule* module)
             continue;
         }
 
-        if( module->BindImportedFunction(f, importFunction) < 0 )
+        if(module->BindImportedFunction(f, importFunction) < 0)
         {
             WriteError(engine, "Cannot import function : "s + importString, module->GetName());
             result = false;
@@ -412,13 +412,12 @@ as::asIScriptEngine* EWAN::Script::CreateEngine()
         return nullptr;
     }
 
-    static const std::unordered_map<as::asEEngineProp,as::asPWORD> properties = {
-        { as::asEP_COMPILER_WARNINGS, 2 }, // -Werror for scripts, woohoo!
-        { as::asEP_DISALLOW_EMPTY_LIST_ELEMENTS, true },
-        { as::asEP_DISALLOW_GLOBAL_VARS, true },
-        { as::asEP_OPTIMIZE_BYTECODE, true },
-        { as::asEP_REQUIRE_ENUM_SCOPE, true }
-    };
+    static const std::unordered_map<as::asEEngineProp, as::asPWORD> properties = {
+        {as::asEP_COMPILER_WARNINGS, 2}, // -Werror for scripts, woohoo!
+        {as::asEP_DISALLOW_EMPTY_LIST_ELEMENTS, true},
+        {as::asEP_DISALLOW_GLOBAL_VARS, true},
+        {as::asEP_OPTIMIZE_BYTECODE, true},
+        {as::asEP_REQUIRE_ENUM_SCOPE, true}};
 
     int r = 0;
 
@@ -447,7 +446,7 @@ as::asIScriptEngine* EWAN::Script::CreateEngine()
 
 void EWAN::Script::DestroyEngine(as::asIScriptEngine*& engine)
 {
-    for(as::asUINT m=0, mLen = engine->GetModuleCount(); m<mLen; m++)
+    for(as::asUINT m = 0, mLen = engine->GetModuleCount(); m < mLen; m++)
     {
         Event.Unregister(engine->GetModuleByIndex(m));
     }
@@ -489,11 +488,11 @@ int EWAN::Script::CallbackInclude(Builder& builder, const std::string& include, 
 
 void EWAN::Script::CallbackMessage(const as::asSMessageInfo& msg)
 {
-    static const std::function<void(std::string_view)> functions[3] = { &Log::PrintError, &Log::PrintWarning, &Log::PrintInfo };
-    std::function<void(std::string_view)> function = functions[msg.type];
+    static const std::function<void(std::string_view)> functions[3] = {&Log::PrintError, &Log::PrintWarning, &Log::PrintInfo};
+    std::function<void(std::string_view)>              function     = functions[msg.type];
 
     std::string log, section = msg.section;
-    bool numbers = msg.row > 0 || msg.col > 0;
+    bool        numbers = msg.row > 0 || msg.col > 0;
 
     if(!section.empty() || numbers)
     {
@@ -534,14 +533,14 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
     const std::string pragmaString = pragma;
 
     std::vector<std::string> pragmargs = Text::Split(pragma, ' ');
-    pragma = pragmargs.front();
+    pragma                             = pragmargs.front();
     pragmargs.erase(pragmargs.begin());
 
     if(pragma == "module")
     {
         pragma = pragmargs.front();
         pragmargs.erase(pragmargs.begin());
-    
+
         if(pragma == "debug" && pragmargs.empty())
         {
             UserData::Module* moduleData = GetUserData(module);

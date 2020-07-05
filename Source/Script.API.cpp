@@ -19,16 +19,16 @@ namespace
             ok = r >= 0;
     }
 #else
-#define _(ok, expr)                                        \
-do \
-{                                                          \
-    int r = expr;                                          \
-    if(r < 0)                                              \
-    {                                                      \
-        Log::Raw(""s + #expr + " = " + std::to_string(r)); \
-        ok = false;                                        \
-    }                                                      \
-} while(0);
+#    define _(ok, expr)                                            \
+        do                                                         \
+        {                                                          \
+            int r = expr;                                          \
+            if(r < 0)                                              \
+            {                                                      \
+                Log::Raw(""s + #expr + " = " + std::to_string(r)); \
+                ok = false;                                        \
+            }                                                      \
+        } while(0);
 #endif
 
     int RegisterContentCache(as::asIScriptEngine* engine, const std::string& cacheName, const std::string& typeName = {})
@@ -66,7 +66,7 @@ namespace EWAN
     {
         void AppLog(App*, std::string text)
         {
-            as::asIScriptContext* context = as::asGetActiveContext();
+            as::asIScriptContext*  context  = as::asGetActiveContext();
             as::asIScriptFunction* function = context->GetFunction();
 
             std::string caller = std::string(function->GetModuleName()) + "(" + function->GetScriptSectionName() + ")::" + function->GetName();
@@ -82,11 +82,11 @@ namespace EWAN
 
             sprite->setTexture(*texture, resetRect);
             return true;
-        } 
+        }
     }
 }
 
-bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::string& ns/*= "EWAN" */)
+bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::string& ns /*= "EWAN" */)
 {
     bool ok = true;
 
@@ -112,14 +112,19 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
     // Forward declarations
 
     static const std::vector<const char*> zeroObjRefNoHandle = {
-        "App", "Content", "GameInfo", "Script", "Window",
-        "ContentCache", "ContentSprite", "ContentTexture",
+        "App",
+        "Content",
+        "GameInfo",
+        "Script",
+        "Window",
+        "ContentCache",
+        "ContentSprite",
+        "ContentTexture",
         "WindowFPS",
     };
 
     static const std::vector<const char*> zeroObjRefNoCount = {
-        "Sprite", "Texture"
-    };
+        "Sprite", "Texture"};
 
     for(const auto& obj : zeroObjRefNoHandle)
     {
@@ -132,7 +137,7 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
     }
 
     _(ok, RegisterContentCache(engine, "ContentCache"));
-    _(ok, RegisterContentCache(engine, "ContentSprite",  "Sprite@"));
+    _(ok, RegisterContentCache(engine, "ContentSprite", "Sprite@"));
     _(ok, RegisterContentCache(engine, "ContentTexture", "Texture@"));
 
     // NOTE: Methods marked with 'SFML' are binding directly to SFML
@@ -142,7 +147,7 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
     _(ok, engine->RegisterObjectProperty("App", "const Script   Script", asOFFSET(App, Script)));
     _(ok, engine->RegisterObjectProperty("App", "      Window   Window", asOFFSET(App, Window)));
 
-    _(ok, engine->RegisterObjectMethod( "App", "void Log(const string&in text) const", as::asFUNCTION(ScriptAPI::AppLog), as::asCALL_CDECL_OBJFIRST));
+    _(ok, engine->RegisterObjectMethod("App", "void Log(const string&in text) const", as::asFUNCTION(ScriptAPI::AppLog), as::asCALL_CDECL_OBJFIRST));
 
     //
 
@@ -166,12 +171,12 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
 
     _(ok, engine->RegisterObjectProperty("Script", "const string RootDirectory", asOFFSET(Script, RootDirectory)));
 
-    _(ok, engine->RegisterObjectMethod("Script", "bool LoadModule(const string&in fileName, const string&in moduleName) const", as::asMETHOD(Script,LoadModule_Call), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod("Script", "bool UnloadModule(const string&in moduleName) const", as::asMETHOD(Script,UnloadModule_Call), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Script", "bool LoadModule(const string&in fileName, const string&in moduleName) const", as::asMETHOD(Script, LoadModule_Call), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Script", "bool UnloadModule(const string&in moduleName) const", as::asMETHOD(Script, UnloadModule_Call), as::asCALL_THISCALL));
 
     //
 
-    _(ok, engine->RegisterObjectMethod("Sprite", "void Move(float xOffset, float yOffset)", as::asMETHODPR(sf::Sprite, move, (float, float), void), as::asCALL_THISCALL)); // SFML Transformable
+    _(ok, engine->RegisterObjectMethod("Sprite", "void Move(float xOffset, float yOffset)", as::asMETHODPR(sf::Sprite, move, (float, float), void), as::asCALL_THISCALL));   // SFML Transformable
     _(ok, engine->RegisterObjectMethod("Sprite", "void SetPosition(float x, float y)", as::asMETHODPR(sf::Sprite, setPosition, (float, float), void), as::asCALL_THISCALL)); // SFML Transformable
 
     _(ok, engine->RegisterObjectMethod("Sprite", "bool SetTexture(const Texture&in texture, bool resetRect = true) // deprecated", as::asMETHOD(sf::Sprite, setTexture), as::asCALL_THISCALL)); // SFML Sprite
@@ -205,12 +210,12 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
 
     _(ok, engine->SetDefaultNamespace(""));
 
-    _(ok, engine->RegisterGlobalProperty(Text::Join(std::vector<std::string>{ns, "::App App"}, "").c_str(), app));
+    _(ok, engine->RegisterGlobalProperty(Text::Join(std::vector<std::string> {ns, "::App App"}, "").c_str(), app));
 
     return ok;
 }
 
-// As G++ option -Wno-cast-function-type is enabled only for *this* file, function cannot live anywhere else (without failing build) 
+// As G++ option -Wno-cast-function-type is enabled only for *this* file, function cannot live anywhere else (without failing build)
 bool EWAN::Script::InitMessageCallback(as::asIScriptEngine* engine)
 {
     return engine->SetMessageCallback(as::asMETHOD(Script, CallbackMessage), this, as::asCALL_THISCALL) >= 0;

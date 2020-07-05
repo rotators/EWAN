@@ -1,14 +1,15 @@
 #include "App.hpp"
+
 #include "Log.hpp"
 
 #include <type_traits> // std::is_same
 
 #if __has_include(<format>)
- #include <format>
+#    include <format>
 #endif
 
 EWAN::App::App() :
-    Version{PROJECT_VERSION_MAJOR, PROJECT_VERSION_MINOR, PROJECT_VERSION_PATCH, PROJECT_VERSION_TWEAK}
+    Version {PROJECT_VERSION_MAJOR, PROJECT_VERSION_MINOR, PROJECT_VERSION_PATCH, PROJECT_VERSION_TWEAK}
 {}
 
 EWAN::App::~App()
@@ -94,23 +95,23 @@ namespace EWAN
     template<typename T>
     void info()
     {
-        [[maybe_unused]] int (*x)[sizeof(T)][alignof(T)] = -1;
+        [[maybe_unused]] int(*x)[sizeof(T)][alignof(T)] = -1;
     }
 
     [[maybe_unused]] static void StaticAssert()
     {
-        #if 0
+#if 0
         info<App>();
         info<Content>();
         info<Settings>();
         info<Window>();
-        #endif
+#endif
 
-        #if 0
+#if 0
         info<sf::Clock>();
         info<sf::Text>();
         info<sf::Window>();
-        #endif
+#endif
 
         static_assert(std::is_same<int8_t, sf::Int8>::value);
         static_assert(std::is_same<int16_t, sf::Int16>::value);

@@ -1,7 +1,9 @@
-#include "Embed.hpp"
+#include "Window.hpp"
+
 #include "Log.hpp"
 #include "Script.hpp"
-#include "Window.hpp"
+
+#include "Embed.hpp"
 
 #include <algorithm> // std::clamp
 
@@ -46,12 +48,12 @@ void EWAN::Window::Open_Call(sf::Uint32 width /*= 0 */, sf::Uint32 height /*= 0 
     // Use desktop resolution if width and height isn't set
     if(!width && !height)
     {
-        width = desktop.width;
+        width  = desktop.width;
         height = desktop.height;
     }
     else
     {
-        width = std::clamp<sf::Uint32>(width, 0, desktop.width);
+        width  = std::clamp<sf::Uint32>(width, 0, desktop.width);
         height = std::clamp<sf::Uint32>(height, 0, desktop.height);
     }
 

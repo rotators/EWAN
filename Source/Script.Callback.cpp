@@ -13,7 +13,7 @@ static inline EWAN::Script* GetScript(as::asIScriptEngine* engine)
 //
 
 // Send event back to Script, with a twist
-int EWAN::Script::Callback::Include(const char *include, const char *from, as::CScriptBuilder* builder, void* data)
+int EWAN::Script::Callback::Include(const char* include, const char* from, as::CScriptBuilder* builder, void* data)
 {
     EWAN::Script::Builder& scriptBuilder = static_cast<EWAN::Script::Builder&>(*builder);
     return GetScript(builder->GetEngine())->CallbackInclude(scriptBuilder, std::string(include), std::string(from), data);

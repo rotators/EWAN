@@ -1,5 +1,4 @@
 #include "Script.hpp"
-
 #include "Text.hpp"
 
 using namespace std::literals::string_literals;
@@ -8,7 +7,7 @@ using namespace std::literals::string_literals;
 // Script::Event::Data
 //
 
-EWAN::Script::Event::Data::Data(std::list<std::string> params, std::list<as::asIScriptFunction*>& list ) :
+EWAN::Script::Event::Data::Data(std::list<std::string> params, std::list<as::asIScriptFunction*>& list) :
     Params(params),
     List(list)
 {}
@@ -94,7 +93,7 @@ void EWAN::Script::Event::Unregister(as::asIScriptModule* module)
 
 void EWAN::Script::Event::Unregister(std::list<as::asIScriptFunction*>& functions, as::asIScriptEngine* engine, const std::string& name)
 {
-    for(as::asUINT m=0, mLen=engine->GetModuleCount(); m<mLen; m++)
+    for(as::asUINT m = 0, mLen = engine->GetModuleCount(); m < mLen; m++)
     {
         Unregister(functions, engine->GetModuleByIndex(m), name);
     }
@@ -104,8 +103,7 @@ void EWAN::Script::Event::Unregister(std::list<as::asIScriptFunction*>& function
 {
     const bool debug = GetUserData(module)->Debug;
 
-    functions.remove_if([debug, module, name](as::asIScriptFunction* function) -> bool
-    {
+    functions.remove_if([debug, module, name](as::asIScriptFunction* function) -> bool {
         if(function->GetModule() == module)
         {
             if(debug)

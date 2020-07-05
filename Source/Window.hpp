@@ -18,17 +18,17 @@ namespace EWAN
             sf::Clock Clock;
             sf::Text  Text;
 
-            uint16_t  Count = 0;
-            uint16_t  Min = uint16_t(-1);
-            uint16_t  Max = 0;
-            uint16_t  Frame = 0;
+            uint16_t Count = 0;
+            uint16_t Min   = uint16_t(-1);
+            uint16_t Max   = 0;
+            uint16_t Frame = 0;
 
-            bool      Visible = true;
+            bool Visible = true;
         };
 
         EWAN::Window::FPS FPS;
 
-//        uint8_t Unused[4];
+        //        uint8_t Unused[4];
 
     public:
         Window();

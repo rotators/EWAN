@@ -1,7 +1,8 @@
-#include <SFML/System.hpp>
-
 #include "Log.hpp"
+
 #include "Text.hpp"
+
+#include <SFML/System.hpp>
 
 #include <filesystem>
 #include <iostream>

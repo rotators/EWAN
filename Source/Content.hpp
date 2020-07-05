@@ -36,8 +36,8 @@ namespace EWAN
             mutable sf::Mutex                                        CacheLock;
 
         private:
-            typedef std::function<void* ()>     CallbackNewFunction;
-            typedef std::function<void (void*)> CallbackDeleteFunction;
+            typedef std::function<void*()>     CallbackNewFunction;
+            typedef std::function<void(void*)> CallbackDeleteFunction;
 
             CallbackNewFunction    CallbackNew;
             CallbackDeleteFunction CallbackDelete;
@@ -140,8 +140,8 @@ namespace EWAN
         template<typename T>
         const Cache& GetCache() const;
         template<typename T>
-        T*  LoadFileInternal(const std::string& filename, const std::string& id);
-    
+        T* LoadFileInternal(const std::string& filename, const std::string& id);
+
     public:
         bool   LoadFile(const std::string& filename, const std::string& id);
         size_t LoadDirectory(const std::string& directory);

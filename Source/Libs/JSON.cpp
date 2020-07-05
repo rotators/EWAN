@@ -1,7 +1,7 @@
+#include "Libs/JSON.hpp"
+
 #include "Log.hpp"
 #include "Utils.hpp"
-
-#include "Libs/JSON.hpp"
 
 bool EWAN::JSON::ReadJSON(const std::string& filename, nl::json& json)
 {
@@ -27,7 +27,7 @@ bool EWAN::JSON::ValidateJSON(const nl::json& json, const EWAN::JSON::Schema& sc
 {
     for(const auto& part : schema)
     {
-        std::string name  = part.first, type = part.second;
+        std::string name = part.first, type = part.second;
 
         bool optional = false;
 
@@ -57,8 +57,8 @@ bool EWAN::JSON::ValidateJSON(const nl::json& json, const EWAN::JSON::Schema& sc
         }
 
         auto value = json.at(ptr);
-        bool ok = true;
-        optional = false;
+        bool ok    = true;
+        optional   = false;
         if(type.back() == '?')
         {
             type.pop_back();

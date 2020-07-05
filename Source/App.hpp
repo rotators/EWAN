@@ -14,8 +14,8 @@ namespace EWAN
     public:
         const uint8_t Version[4];
 
-        bool Finished = false;
-        bool Quit = false;
+        bool    Finished = false;
+        bool    Quit     = false;
         uint8_t Unused0[2];
 
         EWAN::Content  Content;

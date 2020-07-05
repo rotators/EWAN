@@ -5,11 +5,11 @@
 #include <regex>
 #include <sstream>
 
-static std::regex reIsBlank( "^[\\t\\ ]*$" ); 
+static std::regex reIsBlank("^[\\t\\ ]*$");
 
 bool EWAN::Text::IsBlank(const std::string& text)
 {
-    return std::regex_match(text, reIsBlank); 
+    return std::regex_match(text, reIsBlank);
 }
 
 std::string EWAN::Text::Replace(const std::string& text, const std::string& from, const std::string& to)
@@ -17,15 +17,15 @@ std::string EWAN::Text::Replace(const std::string& text, const std::string& from
     std::string result;
 
     std::string::const_iterator current = text.begin();
-    std::string::const_iterator end = text.end();
-    std::string::const_iterator next = std::search(current, end, from.begin(), from.end());
+    std::string::const_iterator end     = text.end();
+    std::string::const_iterator next    = std::search(current, end, from.begin(), from.end());
 
     while(next != end)
     {
         result.append(current, next);
         result.append(to);
         current = next + from.size();
-        next = std::search(current, end, from.begin(), from.end());
+        next    = std::search(current, end, from.begin(), from.end());
     }
 
     result.append(current, next);
@@ -46,7 +46,7 @@ std::vector<std::string> EWAN::Text::Split(const std::string& text, const char& 
             if(separator != ' ')
                 tmp = Trim(tmp);
 
-            result.push_back( tmp );
+            result.push_back(tmp);
         }
     }
 
@@ -64,7 +64,7 @@ std::string EWAN::Text::Join(const std::list<std::string>& text, const std::stri
             return text.front();
         default:
             std::ostringstream oss;
-            std::copy( text.begin(), --text.end(), std::ostream_iterator<std::string>( oss, delimeter.c_str() ) );
+            std::copy(text.begin(), --text.end(), std::ostream_iterator<std::string>(oss, delimeter.c_str()));
             oss << *text.rbegin();
             return oss.str();
     }
@@ -82,7 +82,7 @@ std::string EWAN::Text::Join(const std::vector<std::string>& text, const std::st
             return text[0];
         default:
             std::ostringstream oss;
-            std::copy( text.begin(), --text.end(), std::ostream_iterator<std::string>( oss, delimeter.c_str() ) );
+            std::copy(text.begin(), --text.end(), std::ostream_iterator<std::string>(oss, delimeter.c_str()));
             oss << *text.rbegin();
             return oss.str();
     }
@@ -97,7 +97,7 @@ std::string EWAN::Text::TrimLeft(const std::string& text)
 {
     std::string result = text;
 
-    result.erase(result.begin(), std::find_if( result.begin(), result.end(), [](int ch) { return !std::isspace(ch); }));
+    result.erase(result.begin(), std::find_if(result.begin(), result.end(), [](int ch) { return !std::isspace(ch); }));
 
     return result;
 }
@@ -115,7 +115,7 @@ std::string EWAN::Text::ToLower(const std::string& text)
 {
     std::string result = text;
 
-    std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c){ return std::tolower(c); });
+    std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return std::tolower(c); });
 
     return result;
 }
@@ -124,7 +124,7 @@ std::string EWAN::Text::ToUpper(const std::string& text)
 {
     std::string result = text;
 
-    std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c){ return std::toupper(c); });
+    std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return std::toupper(c); });
 
     return result;
 }
