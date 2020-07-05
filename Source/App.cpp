@@ -115,12 +115,12 @@ namespace EWAN
         static_assert(std::is_same<int8_t, sf::Int8>::value);
         static_assert(std::is_same<int16_t, sf::Int16>::value);
         static_assert(std::is_same<int32_t, sf::Int32>::value);
-        static_assert(std::is_same<int64_t, sf::Int64>::value);
+        // static_assert(std::is_same<int64_t, sf::Int64>::value);
 
         static_assert(std::is_same<uint8_t, sf::Uint8>::value);
         static_assert(std::is_same<uint16_t, sf::Uint16>::value);
         static_assert(std::is_same<uint32_t, sf::Uint32>::value);
-        static_assert(std::is_same<uint64_t, sf::Uint64>::value);
+        // static_assert(std::is_same<uint64_t, sf::Uint64>::value);
 
         static_assert(std::is_same<uint8_t, as::asBYTE>::value);
         static_assert(std::is_same<uint32_t, as::asUINT>::value);
