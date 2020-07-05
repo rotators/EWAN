@@ -70,7 +70,6 @@ jobs:
 
           if [ -f "$HOME/gha.commit" ]; then
              sed -i '1s!^!Progress every day\n!' $HOME/gha.commit
-             dos2unix $HOME/gha.commit
              echo ::set-env name=GHA_COMMIT::true
              cat $HOME/gha.commit
           fi
@@ -80,7 +79,6 @@ jobs:
     run:  |
           :
           echo ::group::git commit
-          dos2unix $HOME/gha.commit
           sed -i '/^#/d' $HOME/gha.commit
           git config --global user.name  "${{ secrets.ANTALASKAYA_NAME }}"
           git config --global user.email "${{ secrets.ANTALASKAYA_EMAIL }}"
