@@ -148,7 +148,7 @@ void EWAN::Window::Render(Script& script)
 
     if(FPS.Visible && FPS.Min != std::numeric_limits<uint16_t>::max())
     {
-        FPS.Text.setString(std::to_string(FPS.Min) + " " + std::to_string(FPS.Count) + " " + std::to_string(FPS.Max) + " " + std::to_string(elapsed));
+        FPS.Text.setString(std::to_string(FPS.Min) + " " + std::to_string(FPS.Count) + " " + std::to_string(FPS.Max) + " " + std::to_string(frameTime));
         draw(FPS.Text);
     }
 
