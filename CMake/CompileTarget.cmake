@@ -40,8 +40,8 @@ function( other_target target )
         endif()
         ]]
     elseif( MSVC )
-        set_property( TARGET ${target} APPEND PROPERTY COMPILE_FLAGS /MT )
-        set_property( TARGET ${target} APPEND PROPERTY LINK_FLAGS    /OPT:REF )
+        set_property( TARGET ${target} APPEND PROPERTY COMPILE_OPTIONS /MT )
+        set_property( TARGET ${target} APPEND PROPERTY LINK_OPTIONS    /OPT:REF )
     endif()
 endfunction()
 

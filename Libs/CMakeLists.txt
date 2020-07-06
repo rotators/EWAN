@@ -10,7 +10,7 @@ set( BUILD_SHARED_LIBS FALSE )
 
 add_subdirectory( AngelScript/sdk/angelscript/projects/cmake EXCLUDE_FROM_ALL )
 target_compile_definitions( ${ANGELSCRIPT_LIBRARY_NAME} PUBLIC AS_USE_NAMESPACE )
-##other_target( ${ANGELSCRIPT_LIBRARY_NAME} )
+other_target( ${ANGELSCRIPT_LIBRARY_NAME} )
 if( CMAKE_COMPILER_IS_GNUCXX )
     # https://www.angelcode.com/angelscript/sdk/docs/manual/doc_compile_lib.html#doc_compile_gnuc
     compiler_flag( "compile" angelscript -fno-strict-aliasing COMPILER_FLAG_FNO_STRICT_ALIASING )
