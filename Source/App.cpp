@@ -22,7 +22,7 @@ void EWAN::App::Run()
 {
     if(!Init())
     {
-        Log::Raw("Initialization failed");
+        Log::PrintError("Initialization failed");
         return;
     }
 
@@ -67,6 +67,7 @@ void EWAN::App::MainLoop()
     Log::PrintInfo("BEGIN MAIN LOOP");
 
     Window.FPS.Clock.restart();
+    Window.FPS.FrameTime.restart();
 
     bool quit = false;
     while(!Quit)
@@ -89,7 +90,7 @@ void EWAN::App::MainLoop()
 
 //
 
-namespace EWAN
+namespace
 {
     // Compile time results of sizeof/alignof as errors :)
     template<typename T>

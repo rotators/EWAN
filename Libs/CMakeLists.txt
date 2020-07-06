@@ -75,6 +75,8 @@ add_subdirectory( json EXCLUDE_FROM_ALL )
 ## SFML
 ##
 
+set(SFML_BUILD_TEST_SUITE ON)
+
 add_subdirectory( SFML EXCLUDE_FROM_ALL )
 foreach( name IN ITEMS activity audio graphics main network system window)
     if( TARGET sfml-${name} )

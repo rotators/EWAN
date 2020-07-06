@@ -6,6 +6,7 @@
 #include "Libs/SFML.hpp"
 
 #include <cstdint>
+#include <limits>
 #include <string>
 
 namespace EWAN
@@ -16,10 +17,11 @@ namespace EWAN
         struct FPS
         {
             sf::Clock Clock;
+            sf::Clock FrameTime;
             sf::Text  Text;
 
             uint16_t Count = 0;
-            uint16_t Min   = uint16_t(-1);
+            uint16_t Min   = std::numeric_limits<uint16_t>::max();
             uint16_t Max   = 0;
             uint16_t Frame = 0;
 

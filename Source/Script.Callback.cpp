@@ -28,31 +28,24 @@ int EWAN::Script::Callback::Pragma(const std::string& pragmaText, as::CScriptBui
 
 void EWAN::Script::Callback::ContextUserDataCleanup(as::asIScriptContext* context)
 {
-    EWAN::Script::UserData::Context* contextData = static_cast<EWAN::Script::UserData::Context*>(context->SetUserData(nullptr, 0));
+    UserData::Context* contextData = static_cast<UserData::Context*>(context->SetUserData(nullptr, 0));
     delete contextData;
 }
 
 void EWAN::Script::Callback::EngineUserDataCleanup(as::asIScriptEngine* engine)
 {
-    EWAN::Script::UserData::Engine* engineData = static_cast<EWAN::Script::UserData::Engine*>(engine->SetUserData(nullptr, 0));
+    UserData::Engine* engineData = static_cast<UserData::Engine*>(engine->SetUserData(nullptr, 0));
     delete engineData;
 }
 
 void EWAN::Script::Callback::FunctionUserDataCleanup(as::asIScriptFunction* function)
 {
-    EWAN::Script::UserData::Function* functionData = static_cast<EWAN::Script::UserData::Function*>(function->SetUserData(nullptr, 0));
-
+    UserData::Function* functionData = static_cast<UserData::Function*>(function->SetUserData(nullptr, 0));
     delete functionData;
 }
 
 void EWAN::Script::Callback::ModuleUserDataCleanup(as::asIScriptModule* module)
 {
-    EWAN::Script::UserData::Module* moduleData = static_cast<EWAN::Script::UserData::Module*>(module->SetUserData(nullptr, 0));
-
-    as::asIScriptEngine* engine = module->GetEngine();
-
-    if(moduleData->Debug)
-        GetScript(engine)->WriteInfo(engine, "Module destroyed", module->GetName());
-
+    UserData::Module* moduleData = static_cast<UserData::Module*>(module->SetUserData(nullptr, 0));
     delete moduleData;
 }

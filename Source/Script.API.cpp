@@ -6,7 +6,7 @@
 
 #include "Libs/SFML.hpp"
 
-#define SCRIPT_REGISTRATION_CHECK
+//#define SCRIPT_REGISTRATION_CHECK
 
 using namespace std::literals::string_literals;
 
@@ -73,16 +73,6 @@ namespace EWAN
 
             context->GetEngine()->WriteMessage(caller.c_str(), 0, 0, as::asMSGTYPE_INFORMATION, text.c_str());
         }
-
-        bool Sprite_SetTexture(sf::Sprite* sprite, const Content& content, const std::string& textureId, bool resetRect)
-        {
-            sf::Texture* texture = content.Texture.GetAs<sf::Texture>(textureId);
-            if(!texture)
-                return false;
-
-            sprite->setTexture(*texture, resetRect);
-            return true;
-        }
     }
 }
 
@@ -114,17 +104,19 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
     static const std::vector<const char*> zeroObjRefNoHandle = {
         "App",
         "Content",
-        "GameInfo",
-        "Script",
-        "Window",
         "ContentCache",
         "ContentSprite",
         "ContentTexture",
-        "WindowFPS",
+        "GameInfo",
+        "Script",
+        "Window",
+        "WindowFPS"
     };
 
     static const std::vector<const char*> zeroObjRefNoCount = {
-        "Sprite", "Texture"};
+        "Sprite",
+        "Texture"
+    };
 
     for(const auto& obj : zeroObjRefNoHandle)
     {
@@ -142,6 +134,7 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
 
     // NOTE: Methods marked with 'SFML' are binding directly to SFML
 
+    _(ok, engine->RegisterObjectProperty("App", "      bool     Quit", asOFFSET(App, Quit)));
     _(ok, engine->RegisterObjectProperty("App", "      Content  Content", asOFFSET(App, Content)));
     _(ok, engine->RegisterObjectProperty("App", "const GameInfo GameInfo", asOFFSET(App, GameInfo)));
     _(ok, engine->RegisterObjectProperty("App", "const Script   Script", asOFFSET(App, Script)));
@@ -177,10 +170,11 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
     //
 
     _(ok, engine->RegisterObjectMethod("Sprite", "void Move(float xOffset, float yOffset)", as::asMETHODPR(sf::Sprite, move, (float, float), void), as::asCALL_THISCALL));   // SFML Transformable
+    _(ok, engine->RegisterObjectMethod("Sprite", "void SetOrigin(float x, float y)", as::asMETHODPR(sf::Sprite, setOrigin, (float, float), void), as::asCALL_THISCALL)); // SFML Transformable
     _(ok, engine->RegisterObjectMethod("Sprite", "void SetPosition(float x, float y)", as::asMETHODPR(sf::Sprite, setPosition, (float, float), void), as::asCALL_THISCALL)); // SFML Transformable
-
-    _(ok, engine->RegisterObjectMethod("Sprite", "bool SetTexture(const Texture&in texture, bool resetRect = true) // deprecated", as::asMETHOD(sf::Sprite, setTexture), as::asCALL_THISCALL)); // SFML Sprite
-    _(ok, engine->RegisterObjectMethod("Sprite", "bool SetTexture(const Content&in content, const string&in textureId, bool resetRect = true)", as::asFUNCTION(ScriptAPI::Sprite_SetTexture), as::asCALL_CDECL_OBJFIRST));
+    _(ok, engine->RegisterObjectMethod("Sprite", "void SetRotation(float angle)", as::asMETHOD(sf::Sprite, setRotation), as::asCALL_THISCALL)); // SFML Transformable
+    _(ok, engine->RegisterObjectMethod("Sprite", "void SetScale(float factorX, float factorY)", as::asMETHODPR(sf::Sprite, setScale, (float, float), void), as::asCALL_THISCALL)); // SFML Transformable
+    _(ok, engine->RegisterObjectMethod("Sprite", "bool SetTexture(const Texture& texture, bool resetRect = true) // deprecated", as::asMETHOD(sf::Sprite, setTexture), as::asCALL_THISCALL)); // SFML Sprite
 
     //
 

@@ -33,7 +33,7 @@ std::string EWAN::Text::Replace(const std::string& text, const std::string& from
     return result;
 }
 
-std::vector<std::string> EWAN::Text::Split(const std::string& text, const char& separator)
+std::vector<std::string> EWAN::Text::Split(const std::string& text, const char& separator, bool trim /*= true */)
 {
     std::vector<std::string> result;
 
@@ -43,7 +43,7 @@ std::vector<std::string> EWAN::Text::Split(const std::string& text, const char& 
         std::istringstream f(text);
         while(std::getline(f, tmp, separator))
         {
-            if(separator != ' ')
+            if(trim && separator != ' ')
                 tmp = Trim(tmp);
 
             result.push_back(tmp);

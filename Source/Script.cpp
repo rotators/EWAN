@@ -55,6 +55,14 @@ bool EWAN::Script::Init(App* app)
 
     /*/ At this point init module should request and finish building of any other modules /*/
 
+    // There might be no modules loaded, if init module is marked as optional and cannot be built
+    if(!engine->GetModuleCount())
+    {
+        WriteError(engine, fail + "cannot find any modules (early check)");
+        DestroyEngine(engine);
+        return false;
+    }
+
     if(!BindImportedFunctions(engine))
     {
         WriteError(engine, fail + "cannot bind all imported functions");
@@ -62,7 +70,7 @@ bool EWAN::Script::Init(App* app)
         return false;
     }
 
-    // Run OnInit event; always clears Event.OnInit
+    // [OnInit] always clears Event.OnInit
     // `falseFunction` points to first script function which returned false (if any)
     {
         as::asIScriptFunction* falseFunction = nullptr;
@@ -76,6 +84,7 @@ bool EWAN::Script::Init(App* app)
 
     // Unload modules which requested it with `#pragma module unload`
     {
+        // Cache all modules first so they can be safely unloaded
         std::vector<as::asIScriptModule*> allModules;
         for(as::asUINT m = 0, mLen = engine->GetModuleCount(); m < mLen; m++)
         {
@@ -84,12 +93,20 @@ bool EWAN::Script::Init(App* app)
 
         for(auto& module : allModules)
         {
-            if(GetUserData(module)->Unload)
+            if(UserData::Get(module)->Unload)
             {
                 UnloadModule(module);
                 continue;
             }
         }
+    }
+
+    // There might be no modules left, if all modules are marked as optional
+    if(!engine->GetModuleCount())
+    {
+        WriteError(engine, fail + "cannot find any modules (late check)");
+        DestroyEngine(engine);
+        return false;
     }
 
     WriteInfo(engine, "Script initialization complete");
@@ -113,28 +130,6 @@ void EWAN::Script::Finish()
 
 //
 
-/* static */ EWAN::Script::UserData::Context* EWAN::Script::GetUserData(as::asIScriptContext* context)
-{
-    return static_cast<UserData::Context*>(context->GetUserData(0));
-}
-
-/* static */ EWAN::Script::UserData::Engine* EWAN::Script::GetUserData(as::asIScriptEngine* engine)
-{
-    return static_cast<UserData::Engine*>(engine->GetUserData(0));
-}
-
-/* static */ EWAN::Script::UserData::Function* EWAN::Script::GetUserData(as::asIScriptFunction* function)
-{
-    return static_cast<UserData::Function*>(function->GetUserData(0));
-}
-
-/* static */ EWAN::Script::UserData::Module* EWAN::Script::GetUserData(as::asIScriptModule* module)
-{
-    return static_cast<UserData::Module*>(module->GetUserData(0));
-}
-
-//
-
 /* static */ void EWAN::Script::WriteInfo(as::asIScriptEngine* engine, const std::string& message, const std::string& section /*= {} */, int row /*= 0 */, int col /*= 0 */)
 {
     engine->WriteMessage(section.c_str(), row, col, as::asMSGTYPE_INFORMATION, message.c_str());
@@ -154,6 +149,8 @@ void EWAN::Script::Finish()
 
 bool EWAN::Script::LoadModule(as::asIScriptEngine* engine, const std::string& fileName, const std::string& moduleName)
 {
+    static const std::string fail = "Loading module failed";
+
     if(!std::filesystem::exists(fileName))
     {
         WriteError(engine, "Cannot load module (file does not exists) : " + fileName);
@@ -168,7 +165,7 @@ bool EWAN::Script::LoadModule(as::asIScriptEngine* engine, const std::string& fi
     }
 
     Builder builder;
-    WriteInfo(engine, "Loading module", moduleName);
+    WriteInfo(engine, "Loading module...", moduleName);
 
     // Creates module and assigns UserData::Module
     int r = builder.StartNewModule(engine, moduleName.c_str());
@@ -180,41 +177,54 @@ bool EWAN::Script::LoadModule(as::asIScriptEngine* engine, const std::string& fi
     // Using AddSectionFromMemory() instead of AddSectionFromFile() for custom script sections names
     std::string fileContent;
     if(!Utils::ReadFile(fileName, fileContent))
+    {
+        WriteInfo(engine, fail, module->GetName());
+        UnloadModule(module);
+
         return false;
+    }
 
     // Set script section name as script filename relative to RootDirectory, with enforced *NIX path separators
-    std::filesystem::path sectionName = std::filesystem::relative(fileName, RootDirectory);
+    const std::string sectionName = Text::Replace(std::filesystem::relative(fileName, RootDirectory).string(), "\\", "/");
 
-    r = builder.AddSectionFromMemory(sectionName.string().c_str(), fileContent.c_str());
+    r = builder.AddSectionFromMemory(sectionName.c_str(), fileContent.c_str());
     if(r < 0)
+    {
+        WriteInfo(engine, fail, module->GetName());
+        UnloadModule(module);
+    
         return false;
+    }
 
     /*/ At this point all non-instant `#pragma module` directives are available as UserData::Module /*/
 
     // Optional modules does not inform caller about failure
-    bool optional = GetUserData(module)->Optional;
+    bool optional = UserData::Get(module)->Optional;
     r             = builder.BuildModule();
     if(r < 0)
-        return optional;
+    {
+        WriteError(engine, fail, module->GetName());
+        UnloadModule(module);
 
+        return optional;
+    }
+
+    // All script functions must have UserData set
     for(as::asUINT f = 0, fLen = module->GetFunctionCount(); f < fLen; f++)
     {
         module->GetFunctionByIndex(f)->SetUserData(new UserData::Function, 0);
     }
 
-    if(!LoadModuleMetadata(builder))
+    // [OnBuild] always clears Event.OnBuild
+    if(!LoadModuleMetadata(builder) || !Event.RunOnBuild(module))
     {
-        UnloadModule(module);
-        return false;
-    }
-
-    // Run OnBuild event; always clears Event.OnBuild
-    if(!Event.RunOnBuild(module))
-    {
+        WriteError(engine, fail, module->GetName());
         UnloadModule(module);
 
         return optional;
     }
+
+    WriteInfo(engine, "Loading module complete", module->GetName());
 
     return true;
 }
@@ -251,13 +261,20 @@ bool EWAN::Script::UnloadModule(as::asIScriptModule*& module)
         }
     }
 
-    WriteInfo(module->GetEngine(), "Unloading module", module->GetName());
+    // Cache data used for post-discard message
+    as::asIScriptEngine* engine = module->GetEngine();
+    const std::string moduleName = module->GetName();
+
+    WriteInfo(engine, "Unloading module...", moduleName);
 
     Event.Unregister(module);
 
     module->UnbindAllImportedFunctions();
     module->Discard();
+
     module = nullptr;
+
+    WriteInfo(engine, "Unloading module complete", moduleName);
 
     return true;
 }
@@ -302,7 +319,7 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
         {"OnInit", {{"bool"}, Event.OnInit}},
         {"OnFinish", {{"void"}, Event.OnFinish}},
 
-        {"OnDraw", {{"void"}, Event.OnDraw}}};
+        {"OnDraw", {{"void", "const float"}, Event.OnDraw}}};
 
     as::asIScriptEngine* engine = builder.GetEngine();
 
@@ -321,7 +338,7 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
                 as::asIScriptFunction* sameFunction        = function->GetModule()->GetFunctionByDecl(expectedDeclaration.c_str());
                 if(function != sameFunction)
                 {
-                    WriteError(engine, "Invalid function signature for engine event : " + event.first + "\nExpected:\n  " + expectedDeclaration + ";\nFound:\n  " + function->GetDeclaration(true, true, false) + ";");
+                    WriteError(engine, "Invalid function signature for engine event : " + event.first + "\nExpected:\n  " + expectedDeclaration + ";\nFound:\n  " + function->GetDeclaration(true, true, false) + ";", function->GetModuleName());
                     return false;
                 }
 
@@ -365,7 +382,7 @@ bool EWAN::Script::BindImportedFunctions(as::asIScriptModule* module)
             continue;
         }
 
-        if(GetUserData(importModule)->Poison)
+        if(UserData::Get(importModule)->Poison)
         {
             WriteError(engine, "Cannot import function (source module is poisoned) : "s + importString, module->GetName());
             result = false;
@@ -389,13 +406,6 @@ bool EWAN::Script::BindImportedFunctions(as::asIScriptModule* module)
     }
 
     return result;
-}
-
-as::asIScriptContext* EWAN::Script::CreateContext(as::asIScriptEngine*)
-{
-    Log::Raw("");
-
-    return nullptr;
 }
 
 as::asIScriptEngine* EWAN::Script::CreateEngine()
@@ -439,17 +449,25 @@ as::asIScriptEngine* EWAN::Script::CreateEngine()
     engine->SetModuleUserDataCleanupCallback(Callback::ModuleUserDataCleanup);
 
     engine->SetUserData(new UserData::Engine, 0);
-    GetUserData(engine)->Script = this;
+    UserData::Get(engine)->Script = this;
 
     return engine;
 }
 
 void EWAN::Script::DestroyEngine(as::asIScriptEngine*& engine)
 {
+    // Cache all modules first so they can be safely unloaded
+    std::vector<as::asIScriptModule*> allModules;
     for(as::asUINT m = 0, mLen = engine->GetModuleCount(); m < mLen; m++)
     {
-        Event.Unregister(engine->GetModuleByIndex(m));
+        allModules.push_back(engine->GetModuleByIndex(m));
     }
+
+    for(auto& module : allModules)
+    {
+        UnloadModule(module);
+    }
+    allModules.clear();
 
     engine->ShutDownAndRelease();
     engine = nullptr;
@@ -507,12 +525,13 @@ void EWAN::Script::CallbackMessage(const as::asSMessageInfo& msg)
         log += "]";
     }
 
-    if(log.empty())
-        log = msg.message;
-    else
-        log += " "s + msg.message;
-
-    function(log);
+    for(const auto& line : Text::Split(std::string(msg.message), '\n', false))
+    {
+        if(log.empty())
+            function(line);
+        else
+            function(log + " " + line);
+    }
 }
 
 int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText, void* data)
@@ -543,7 +562,7 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
 
         if(pragma == "debug" && pragmargs.empty())
         {
-            UserData::Module* moduleData = GetUserData(module);
+            UserData::Module* moduleData = UserData::Get(module);
             if(!moduleData->Debug)
             {
                 moduleData->Debug = true;
@@ -552,7 +571,7 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
         }
         else if(pragma == "optional" && pragmargs.empty())
         {
-            UserData::Module* moduleData = GetUserData(module);
+            UserData::Module* moduleData = UserData::Get(module);
             if(!moduleData->Optional)
             {
                 moduleData->Optional = true;
@@ -561,7 +580,7 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
         }
         else if(pragma == "poison" && pragmargs.empty())
         {
-            UserData::Module* moduleData = GetUserData(module);
+            UserData::Module* moduleData = UserData::Get(module);
             if(!moduleData->Poison)
             {
                 moduleData->Poison = true;
@@ -581,7 +600,7 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
         }
         else if(pragma == "unload" && pragmargs.empty())
         {
-            UserData::Module* moduleData = GetUserData(module);
+            UserData::Module* moduleData = UserData::Get(module);
             if(!moduleData->Unload)
             {
                 moduleData->Unload = true;

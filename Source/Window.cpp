@@ -140,13 +140,15 @@ void EWAN::Window::Render(Script& script)
 {
     clear();
 
-    script.Event.Run(script.Event.OnDraw);
+    float frameTime = FPS.FrameTime.restart().asSeconds();
+
+    script.Event.Run(script.Event.OnDraw, frameTime);
 
     // always last
 
-    if(FPS.Visible && FPS.Min != uint16_t(-1))
+    if(FPS.Visible && FPS.Min != std::numeric_limits<uint16_t>::max())
     {
-        FPS.Text.setString(std::to_string(FPS.Min) + " " + std::to_string(FPS.Count) + " " + std::to_string(FPS.Max));
+        FPS.Text.setString(std::to_string(FPS.Min) + " " + std::to_string(FPS.Count) + " " + std::to_string(FPS.Max) + " " + std::to_string(elapsed));
         draw(FPS.Text);
     }
 

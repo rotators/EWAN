@@ -60,6 +60,7 @@ target_sources( ${PROJECT_NAME}.Core
         Script.Builder.cpp
         Script.Callback.cpp
         Script.Event.cpp
+        Script.UserData.cpp
         Text.cpp
         Text.hpp
         Utils.cpp

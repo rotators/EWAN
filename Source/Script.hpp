@@ -7,6 +7,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <utility> // std::forward
 
 namespace EWAN
 {
@@ -80,12 +81,13 @@ namespace EWAN
             void Unregister(std::list<as::asIScriptFunction*>& functions, as::asIScriptModule* module, const std::string& name);
 
             bool Run(as::asIScriptContext* context);
+            bool Run(as::asIScriptContext* context, float& arg0);
             bool RunOnBuild(as::asIScriptModule* module);
             bool RunOnInit(as::asIScriptEngine* engine, as::asIScriptFunction*& function);
             void RunOnFinish(as::asIScriptEngine* engine);
 
             template<typename... Args>
-            bool Run(std::list<as::asIScriptFunction*>& functions, Args&&... args)
+            bool Run(const std::list<as::asIScriptFunction*>& functions, Args&&... args)
             {
                 if(functions.empty())
                     return true;
@@ -109,8 +111,9 @@ namespace EWAN
             }
         };
 
-        struct UserData
+        class UserData
         {
+        public:
             struct Context
             {
                 bool Dummy = true;
@@ -132,7 +135,15 @@ namespace EWAN
                 bool Optional = false;
                 bool Poison   = false;
                 bool Unload   = false;
+
+                bool Import = false;
             };
+
+        public:
+            static Context*  Get(as::asIScriptContext* context);
+            static Engine*   Get(as::asIScriptEngine* engine);
+            static Function* Get(as::asIScriptFunction* function); 
+            static Module*   Get(as::asIScriptModule* module);
         };
 
         //
@@ -154,11 +165,6 @@ namespace EWAN
         bool InitMessageCallback(as::asIScriptEngine* engine);
         void Finish();
 
-        static UserData::Context*  GetUserData(as::asIScriptContext* context);
-        static UserData::Engine*   GetUserData(as::asIScriptEngine* engine);
-        static UserData::Function* GetUserData(as::asIScriptFunction* function);
-        static UserData::Module*   GetUserData(as::asIScriptModule* module);
-
         static void WriteInfo(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
         static void WriteWarning(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
         static void WriteError(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
@@ -174,7 +180,6 @@ namespace EWAN
     protected:
         bool                  BindImportedFunctions(as::asIScriptEngine* engine);
         bool                  BindImportedFunctions(as::asIScriptModule* module);
-        as::asIScriptContext* CreateContext(as::asIScriptEngine* engine);
         as::asIScriptEngine*  CreateEngine();
         void                  DestroyEngine(as::asIScriptEngine*& engine);
 
