@@ -1,7 +1,8 @@
+#include "Script.hpp"
+
 #include "App.hpp"
 #include "Content.hpp"
 #include "Log.hpp"
-#include "Script.hpp"
 #include "Text.hpp"
 
 #include "Libs/SFML.hpp"
@@ -110,13 +111,11 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
         "GameInfo",
         "Script",
         "Window",
-        "WindowFPS"
-    };
+        "WindowFPS"};
 
     static const std::vector<const char*> zeroObjRefNoCount = {
         "Sprite",
-        "Texture"
-    };
+        "Texture"};
 
     for(const auto& obj : zeroObjRefNoHandle)
     {
@@ -169,11 +168,11 @@ bool EWAN::Script::InitAPI(App* app, as::asIScriptEngine* engine, const std::str
 
     //
 
-    _(ok, engine->RegisterObjectMethod("Sprite", "void Move(float xOffset, float yOffset)", as::asMETHODPR(sf::Sprite, move, (float, float), void), as::asCALL_THISCALL));   // SFML Transformable
-    _(ok, engine->RegisterObjectMethod("Sprite", "void SetOrigin(float x, float y)", as::asMETHODPR(sf::Sprite, setOrigin, (float, float), void), as::asCALL_THISCALL)); // SFML Transformable
-    _(ok, engine->RegisterObjectMethod("Sprite", "void SetPosition(float x, float y)", as::asMETHODPR(sf::Sprite, setPosition, (float, float), void), as::asCALL_THISCALL)); // SFML Transformable
-    _(ok, engine->RegisterObjectMethod("Sprite", "void SetRotation(float angle)", as::asMETHOD(sf::Sprite, setRotation), as::asCALL_THISCALL)); // SFML Transformable
-    _(ok, engine->RegisterObjectMethod("Sprite", "void SetScale(float factorX, float factorY)", as::asMETHODPR(sf::Sprite, setScale, (float, float), void), as::asCALL_THISCALL)); // SFML Transformable
+    _(ok, engine->RegisterObjectMethod("Sprite", "void Move(float xOffset, float yOffset)", as::asMETHODPR(sf::Sprite, move, (float, float), void), as::asCALL_THISCALL));                    // SFML Transformable
+    _(ok, engine->RegisterObjectMethod("Sprite", "void SetOrigin(float x, float y)", as::asMETHODPR(sf::Sprite, setOrigin, (float, float), void), as::asCALL_THISCALL));                      // SFML Transformable
+    _(ok, engine->RegisterObjectMethod("Sprite", "void SetPosition(float x, float y)", as::asMETHODPR(sf::Sprite, setPosition, (float, float), void), as::asCALL_THISCALL));                  // SFML Transformable
+    _(ok, engine->RegisterObjectMethod("Sprite", "void SetRotation(float angle)", as::asMETHOD(sf::Sprite, setRotation), as::asCALL_THISCALL));                                               // SFML Transformable
+    _(ok, engine->RegisterObjectMethod("Sprite", "void SetScale(float factorX, float factorY)", as::asMETHODPR(sf::Sprite, setScale, (float, float), void), as::asCALL_THISCALL));            // SFML Transformable
     _(ok, engine->RegisterObjectMethod("Sprite", "bool SetTexture(const Texture& texture, bool resetRect = true) // deprecated", as::asMETHOD(sf::Sprite, setTexture), as::asCALL_THISCALL)); // SFML Sprite
 
     //

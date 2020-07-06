@@ -1,5 +1,6 @@
-#include "Log.hpp"
 #include "Script.hpp"
+
+#include "Log.hpp"
 
 EWAN::Script::Builder::Builder() :
     as::CScriptBuilder()

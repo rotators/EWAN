@@ -192,7 +192,7 @@ bool EWAN::Script::LoadModule(as::asIScriptEngine* engine, const std::string& fi
     {
         WriteInfo(engine, fail, module->GetName());
         UnloadModule(module);
-    
+
         return false;
     }
 
@@ -262,8 +262,8 @@ bool EWAN::Script::UnloadModule(as::asIScriptModule*& module)
     }
 
     // Cache data used for post-discard message
-    as::asIScriptEngine* engine = module->GetEngine();
-    const std::string moduleName = module->GetName();
+    as::asIScriptEngine* engine     = module->GetEngine();
+    const std::string    moduleName = module->GetName();
 
     WriteInfo(engine, "Unloading module...", moduleName);
 

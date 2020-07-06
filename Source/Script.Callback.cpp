@@ -1,5 +1,6 @@
-#include "Log.hpp"
 #include "Script.hpp"
+
+#include "Log.hpp"
 
 using namespace std::literals::string_literals;
 

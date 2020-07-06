@@ -1,4 +1,5 @@
 #include "Script.hpp"
+
 #include "Text.hpp"
 
 using namespace std::literals::string_literals;

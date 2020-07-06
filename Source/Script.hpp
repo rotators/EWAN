@@ -142,7 +142,7 @@ namespace EWAN
         public:
             static Context*  Get(as::asIScriptContext* context);
             static Engine*   Get(as::asIScriptEngine* engine);
-            static Function* Get(as::asIScriptFunction* function); 
+            static Function* Get(as::asIScriptFunction* function);
             static Module*   Get(as::asIScriptModule* module);
         };
 
@@ -178,10 +178,10 @@ namespace EWAN
         bool LoadModuleMetadata(Builder& builder);
 
     protected:
-        bool                  BindImportedFunctions(as::asIScriptEngine* engine);
-        bool                  BindImportedFunctions(as::asIScriptModule* module);
-        as::asIScriptEngine*  CreateEngine();
-        void                  DestroyEngine(as::asIScriptEngine*& engine);
+        bool                 BindImportedFunctions(as::asIScriptEngine* engine);
+        bool                 BindImportedFunctions(as::asIScriptModule* module);
+        as::asIScriptEngine* CreateEngine();
+        void                 DestroyEngine(as::asIScriptEngine*& engine);
 
     public:
         int  CallbackInclude(Builder& builder, const std::string& include, const std::string& fromSection, void* data);
