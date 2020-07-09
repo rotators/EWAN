@@ -4,6 +4,7 @@ on:
  push:
   paths:
   - '.github/workflows/Libs.AngelScript.yml'
+  - 'Libs/CMakeLists.txt'
   - 'Libs/AngelScript'
 
 defaults:
