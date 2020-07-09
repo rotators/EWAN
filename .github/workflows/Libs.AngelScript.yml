@@ -14,7 +14,7 @@ jobs:
 
  AngelScript:
   runs-on: ${{ matrix.cfg.os }}
-  name:    ${{ matrix.cfg.name }} x${{ matrix.cfg.arch }}
+  name:    AngelScript ${{ matrix.cfg.name }} x${{ matrix.cfg.arch }}
   strategy:
    fail-fast: false
    matrix:
@@ -60,6 +60,14 @@ jobs:
              sudo apt install gcc${{ matrix.cfg.ver }}-multilib g++${{ matrix.cfg.ver }}-multilib
              echo ::endgroup::
           fi
+
+          echo ::group::OpenGL
+          sudo apt install libgl1:$arch libglvnd-dev:$arch freeglut3-dev:$arch
+          echo ::endgroup::
+
+          echo ::group::Misc
+          sudo apt install libflac-dev:$arch libfreetype6-dev:$arch libopenal-dev:$arch libudev-dev:$arch libvorbis-dev:$arch libxrandr-dev:$arch
+          echo ::endgroup::
 
   - name: Clone
     uses: actions/checkout@v2
