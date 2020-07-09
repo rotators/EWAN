@@ -121,8 +121,8 @@ jobs:
   - name: Build test
     run:  |
           :
-          # [VisualStudio] '--target' switch is a path to .vcxproj ??
+          # [VisualStudio] '--target' switch is a path to .vcxproj if target name contains dot
           if [[ "${{ matrix.cfg.cc }}" == "cl" ]]; then
              path=Test/
           fi
-          cmake --build Build --config Release --target EWAN.Test
+          cmake --build Build --config Release --target ${path}EWAN.Test

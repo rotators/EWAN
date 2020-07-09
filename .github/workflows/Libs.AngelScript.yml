@@ -94,11 +94,6 @@ jobs:
           fi
 
           cmake -B Build -G "${{ matrix.cfg.generator }}" $platform $toolchain 2>&1
-
-          # [VisualStudio] '--target' switch is a path to .vcxproj
-          if [[ "${{ matrix.cfg.cc }}" == "cl" ]]; then
-             path=Libs/
-          fi
     env:
      CC:  ${{ matrix.cfg.cc }}${{ matrix.cfg.ver }}
      CXX: ${{ matrix.cfg.cxx }}${{ matrix.cfg.ver }}
