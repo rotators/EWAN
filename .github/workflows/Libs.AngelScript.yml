@@ -75,7 +75,7 @@ jobs:
     with:
      submodules: recursive
 
-  - name: Build angelscript-test-feature
+  - name: Build prepare
     run:  |
           :
           # [Linux] Toolchain file is used to compile 32bit targets on 64bit hosts
@@ -99,8 +99,10 @@ jobs:
           if [[ "${{ matrix.cfg.cc }}" == "cl" ]]; then
              path=Libs/
           fi
-
-          cmake --build Build --config Release --target ${path}angelscript-test-feature 2>&1
     env:
      CC:  ${{ matrix.cfg.cc }}${{ matrix.cfg.ver }}
      CXX: ${{ matrix.cfg.cxx }}${{ matrix.cfg.ver }}
+
+  - name:  Build angelscript-test-feature
+    run:   cmake --build Build --config Release --target angelscript-test-feature
+    shell: cmd
