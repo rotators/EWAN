@@ -1,0 +1,97 @@
+name: Libs
+
+on:
+ push:
+  paths:
+  - '.github/workflows/Libs.AngelScript.yml'
+  - 'Libs/AngelScript'
+
+defaults:
+ run:
+  shell: bash
+
+jobs:
+
+ AngelScript:
+  runs-on: ${{ matrix.cfg.os }}
+  name:    ${{ matrix.cfg.name }} x${{ matrix.cfg.arch }}
+  strategy:
+   fail-fast: false
+   matrix:
+    cfg:
+    - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -10,  arch: 32, generator: Unix Makefiles,        app: EWAN }
+    - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -10,  arch: 64, generator: Unix Makefiles,        app: EWAN }
+# clang really doesn't like AngelScript's asm
+#BORKD{ os: ubuntu-latest, name: Clang,  cc: clang, cxx: clang++, ver: -9,   arch: 32, generator: Unix Makefiles,        app: EWAN }
+#     { os: ubuntu-latest, name: Clang,  cc: clang, cxx: clang++, ver: -9,   arch: 64, generator: Unix Makefiles,        app: EWAN }
+    - { os: windows-2019,  name: VS2019, cc: cl,    cxx: cl,      ver: null, arch: 32, generator: Visual Studio 16 2019, app: Release/EWAN.exe }
+    - { os: windows-2019,  name: VS2019, cc: cl,    cxx: cl,      ver: null, arch: 64, generator: Visual Studio 16 2019, app: Release/EWAN.exe }
+#BORKD{ os: windows-2019,  name: MinGW,  cc: gcc,   cxx: g++,     ver: null, arch: 64, generator: MinGW Makefiles,       app: EWAN.exe }
+  steps:
+
+  - name: Install
+    if:   runner.os == 'Linux'
+    run:  |
+          :
+          # [Linux] extra setup is needed to install 32bit packages on 64bit host
+          if [[ ${{ matrix.cfg.arch }} -eq 32 ]]; then
+             arch=i386
+             sudo dpkg --add-architecture $arch
+             echo [apt] added architecture $arch
+          else
+             arch=amd64
+          fi
+
+          echo ::group::apt update
+          sudo apt update 2>&1
+          echo ::endgroup::
+
+          if [[ "${{ matrix.cfg.cc }}" == "gcc" ]]; then
+               echo ::group::GCC/G++
+          elif [[ "${{ matrix.cfg.cc }}" == "clang" ]]; then
+               echo ::group::CLang/CLang++
+          fi
+          sudo apt install ${{ matrix.cfg.cc }}${{ matrix.cfg.ver }} ${{ matrix.cfg.cxx }}${{ matrix.cfg.ver }}
+          echo ::endgroup::
+
+          # [Linux] extra packages are needed to compile 32bit targets on 64bit host
+          if [[ ${{ matrix.cfg.arch }} -eq 32 ]]; then
+             echo ::group::GCC/G++ multilib
+             sudo apt install gcc${{ matrix.cfg.ver }}-multilib g++${{ matrix.cfg.ver }}-multilib
+             echo ::endgroup::
+          fi
+
+  - name: Clone
+    uses: actions/checkout@v2
+    with:
+     submodules: recursive
+
+  - name: Build angelscript-test-feature
+    run:  |
+          :
+          # [Linux] Toolchain file is used to compile 32bit targets on 64bit hosts
+          # NOTE: without proper 32@64 toolchain setup CMake can't find OpenGL libraries
+          if [[ "$RUNNER_OS" == "Linux" ]] && [[ ${{ matrix.cfg.arch }} -eq 32 ]]; then
+             toolchain="-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchain/Linux32.cmake"
+          fi
+
+          # [VisualStudio] '-A' switch is used to compile 32bit targets on 64bit hosts
+          if [[ "${{ matrix.cfg.cc }}" == "cl" ]]; then
+             if [[ ${{ matrix.cfg.arch }} -eq 32 ]]; then
+                platform="-A Win32"
+             else
+                platform="-A x64"
+             fi
+          fi
+
+          cmake -B Build -G "${{ matrix.cfg.generator }}" $platform $toolchain 2>&1
+
+          # [VisualStudio] '--target' switch is a path to .vcxproj
+          if [[ "${{ matrix.cfg.cc }}" == "cl" ]]; then
+             path=Libs/
+          fi
+
+          cmake --build Build --config Release --target ${path}angelscript-test-feature 2>&1
+    env:
+     CC:  ${{ matrix.cfg.cc }}${{ matrix.cfg.ver }}
+     CXX: ${{ matrix.cfg.cxx }}${{ matrix.cfg.ver }}
