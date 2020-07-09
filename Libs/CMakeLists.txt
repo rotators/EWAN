@@ -61,7 +61,7 @@ endif()
 add_custom_command( TARGET angelscript-test-feature
     POST_BUILD
     USES_TERMINAL
-    COMMAND  $<TARGET_FILE:angelscript-test-feature>
+    COMMAND  $<SHELL_PATH:$<TARGET_FILE:angelscript-test-feature>>
     WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/AngelScript/sdk/tests/test_feature/bin/
 )
 

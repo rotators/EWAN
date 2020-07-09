@@ -83,7 +83,7 @@ jobs:
     with:
      submodules: recursive
 
-  - name: Build
+  - name: Build prepare
     run:  |
           :
           # [Linux] Toolchain file is used to compile 32bit targets on 64bit hosts
@@ -102,10 +102,12 @@ jobs:
           fi
 
           cmake -B Build -G "${{ matrix.cfg.generator }}" $platform $toolchain 2>&1
-          cmake --build Build --config Release 2>&1
     env:
      CC:  ${{ matrix.cfg.cc }}${{ matrix.cfg.ver }}
      CXX: ${{ matrix.cfg.cxx }}${{ matrix.cfg.ver }}
+
+  - name: Build project
+    run:  cmake --build Build --config Release
 
   - name: Build check
     run:  |
@@ -119,8 +121,8 @@ jobs:
   - name: Build test
     run:  |
           :
-          # [VisualStudio] '--target' switch is a path to .vcxproj
+          # [VisualStudio] '--target' switch is a path to .vcxproj ??
           if [[ "${{ matrix.cfg.cc }}" == "cl" ]]; then
              path=Test/
           fi
-          cmake --build Build --config Release --target ${path}EWAN.Test
+          cmake --build Build --config Release --target EWAN.Test

@@ -105,4 +105,3 @@ jobs:
 
   - name:  Build angelscript-test-feature
     run:   cmake --build Build --config Release --target angelscript-test-feature
-    shell: cmd
