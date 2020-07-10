@@ -20,8 +20,6 @@ jobs:
    fail-fast: false
    matrix:
     cfg:
-    - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -7,   arch: 32, generator: Unix Makefiles,        app: EWAN }
-    - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -7,   arch: 64, generator: Unix Makefiles,        app: EWAN }
     - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -8,   arch: 32, generator: Unix Makefiles,        app: EWAN }
     - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -8,   arch: 64, generator: Unix Makefiles,        app: EWAN }
     - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -9,   arch: 32, generator: Unix Makefiles,        app: EWAN }
@@ -103,6 +101,9 @@ jobs:
     env:
      CC:  ${{ matrix.cfg.cc }}${{ matrix.cfg.ver }}
      CXX: ${{ matrix.cfg.cxx }}${{ matrix.cfg.ver }}
+
+  - name:  Build angelscript
+    run:   cmake --build Build --config Release --target angelscript
 
   - name:  Build angelscript-test-feature
     run:   cmake --build Build --config Release --target angelscript-test-feature

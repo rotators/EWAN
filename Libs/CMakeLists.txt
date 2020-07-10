@@ -54,22 +54,22 @@ target_compile_definitions( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature PRIVATE DON
 target_link_libraries( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature PRIVATE angelscript )
 target_include_directories( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature PRIVATE ${CMAKE_CURRENT_LIST_DIR}/AngelScript/sdk/angelscript/include )
 set_target_properties( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD TRUE )
-other_target(angelscript-test-feature)
+other_target( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature )
 
 set_target_properties( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature PROPERTIES FOLDER "${PROJECT_NAME}/Libs/AngelScript" )
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     if( WIN32 )
-        compiler_flag( "link" angelscript-test-feature -static           COMPILER_FLAG_STATIC )
+        compiler_flag( "link" ${ANGELSCRIPT_LIBRARY_NAME}-test-feature -static       COMPILER_FLAG_STATIC )
     endif()
-    compiler_flag( "link" angelscript-test-feature -static-libgcc    COMPILER_FLAG_STATIC_LIBGCC )
-    compiler_flag( "link" angelscript-test-feature -static-libstdc++ COMPILER_FLAG_STATIC_LIBSTDCPP )
+    compiler_flag( "link" ${ANGELSCRIPT_LIBRARY_NAME}-test-feature -static-libgcc    COMPILER_FLAG_STATIC_LIBGCC )
+    compiler_flag( "link" ${ANGELSCRIPT_LIBRARY_NAME}-test-feature -static-libstdc++ COMPILER_FLAG_STATIC_LIBSTDCPP )
 endif()
 
 add_custom_command( TARGET angelscript-test-feature
     POST_BUILD
     USES_TERMINAL
-    COMMAND           ${CMAKE_COMMAND} -E time $<TARGET_FILE:angelscript-test-feature>
+    COMMAND           $<SHELL_PATH:$<TARGET_FILE:angelscript-test-feature>>
     WORKING_DIRECTORY $<SHELL_PATH:${CMAKE_CURRENT_LIST_DIR}/AngelScript/sdk/tests/test_feature/bin/>
 )
 
