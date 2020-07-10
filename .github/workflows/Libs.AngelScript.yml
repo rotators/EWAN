@@ -106,4 +106,24 @@ jobs:
     run:   cmake --build Build --config Release --target angelscript
 
   - name:  Build angelscript-test-feature
-    run:   cmake --build Build --config Release --target angelscript-test-feature
+    run:   |
+           :
+           ok=1
+           cmake --build Build --config Release --target angelscript-test-feature || ok=0
+
+           if [[ $ok -eq 0 ]] && [[ "${{ matrix.cfg.cc }}" == "cl" ]];
+              if [[ -f  "Build/Libs/Release/angelscript-test-feature.exe" ]] ; then
+                 echo ::group::Run test
+                 ok=1
+                 cd Libs/AngelScript/sdk/tests/test_feature/bin
+                 ${GITHUB_WORKSPACE}/Build/Libs/Release/angelscript-test-feature.exe || ok=0
+                 echo ::endgroup::
+                 if [[ $ok -eq 0 ]]; then
+                    echo Test failed
+                    exit 1
+                 fi
+              else
+                 echo Test executable not found
+                 exit 1
+              fi
+           fi
