@@ -16,6 +16,8 @@ if( CMAKE_COMPILER_IS_GNUCXX )
     compiler_flag( "compile" angelscript -fno-strict-aliasing COMPILER_FLAG_FNO_STRICT_ALIASING )
 endif()
 
+set_target_properties( ${ANGELSCRIPT_LIBRARY_NAME} PROPERTIES FOLDER "${PROJECT_NAME}/Libs/AngelScript" )
+
 ##
 ## AngelScript addons
 ##
@@ -35,6 +37,8 @@ target_include_directories( ${ANGELSCRIPT_LIBRARY_NAME}-addons PRIVATE ${CMAKE_C
 target_link_libraries( ${ANGELSCRIPT_LIBRARY_NAME}-addons PRIVATE ${ANGELSCRIPT_LIBRARY_NAME} )
 other_target( ${ANGELSCRIPT_LIBRARY_NAME}-addons )
 
+set_target_properties( ${ANGELSCRIPT_LIBRARY_NAME}-addons PROPERTIES FOLDER "${PROJECT_NAME}/Libs/AngelScript" )
+
 ##
 ## AngelScript tests
 ## Run tests right after building targets, for simplicity
@@ -44,12 +48,16 @@ add_subdirectory(AngelScript/sdk/tests/test_feature/projects/cmake EXCLUDE_FROM_
 get_target_property( ANGELSCRIPT__TEST_FEATURE__SOURCES test_feature SOURCES )
 get_target_property( ANGELSCRIPT__TEST_FEATURE__SOURCE_DIR test_feature SOURCE_DIR )
 list( TRANSFORM ANGELSCRIPT__TEST_FEATURE__SOURCES REPLACE "^(.+)$" "${ANGELSCRIPT__TEST_FEATURE__SOURCE_DIR}/\\1" )
-add_executable( angelscript-test-feature EXCLUDE_FROM_ALL )
-target_sources( angelscript-test-feature PRIVATE ${ANGELSCRIPT__TEST_FEATURE__SOURCES} )
-target_compile_definitions( angelscript-test-feature PRIVATE DONT_WAIT=1 )
-target_link_libraries( angelscript-test-feature PRIVATE angelscript )
-target_include_directories( angelscript-test-feature PRIVATE ${CMAKE_CURRENT_LIST_DIR}/AngelScript/sdk/angelscript/include )
+add_executable( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature EXCLUDE_FROM_ALL )
+target_sources( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature PRIVATE ${ANGELSCRIPT__TEST_FEATURE__SOURCES} )
+target_compile_definitions( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature PRIVATE DONT_WAIT=1 )
+target_link_libraries( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature PRIVATE angelscript )
+target_include_directories( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature PRIVATE ${CMAKE_CURRENT_LIST_DIR}/AngelScript/sdk/angelscript/include )
+set_target_properties( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD TRUE )
 other_target(angelscript-test-feature)
+
+set_target_properties( ${ANGELSCRIPT_LIBRARY_NAME}-test-feature PROPERTIES FOLDER "${PROJECT_NAME}/Libs/AngelScript" )
+
 if(CMAKE_COMPILER_IS_GNUCXX)
     if( WIN32 )
         compiler_flag( "link" angelscript-test-feature -static           COMPILER_FLAG_STATIC )
@@ -71,6 +79,8 @@ add_custom_command( TARGET angelscript-test-feature
 
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory( json EXCLUDE_FROM_ALL )
+#set_target_properties( nlohmann_json PROPERTIES FOLDER "${PROJECT_NAME}/Libs/JSON" )
+
 
 ##
 ## SFML
@@ -82,6 +92,7 @@ add_subdirectory( SFML EXCLUDE_FROM_ALL )
 foreach( name IN ITEMS activity audio graphics main network system window)
     if( TARGET sfml-${name} )
         other_target( sfml-${name} )
+        set_target_properties( sfml-${name} PROPERTIES FOLDER "${PROJECT_NAME}/Libs/SFML")
     endif()
 endforeach()
 

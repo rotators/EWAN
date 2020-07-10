@@ -15,11 +15,17 @@ jobs:
 
  AngelScript:
   runs-on: ${{ matrix.cfg.os }}
-  name:    AngelScript ${{ matrix.cfg.name }} x${{ matrix.cfg.arch }}
+  name:    AngelScript ${{ matrix.cfg.name }}${{ matrix.cfg.ver }} x${{ matrix.cfg.arch }}
   strategy:
    fail-fast: false
    matrix:
     cfg:
+    - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -7,   arch: 32, generator: Unix Makefiles,        app: EWAN }
+    - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -7,   arch: 64, generator: Unix Makefiles,        app: EWAN }
+    - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -8,   arch: 32, generator: Unix Makefiles,        app: EWAN }
+    - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -8,   arch: 64, generator: Unix Makefiles,        app: EWAN }
+    - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -9,   arch: 32, generator: Unix Makefiles,        app: EWAN }
+    - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -9,   arch: 64, generator: Unix Makefiles,        app: EWAN }
     - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -10,  arch: 32, generator: Unix Makefiles,        app: EWAN }
     - { os: ubuntu-latest, name: GNU,    cc: gcc,   cxx: g++,     ver: -10,  arch: 64, generator: Unix Makefiles,        app: EWAN }
 # clang really doesn't like AngelScript's asm
