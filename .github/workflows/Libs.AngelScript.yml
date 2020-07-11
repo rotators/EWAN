@@ -111,15 +111,13 @@ jobs:
            ok=1
            cmake --build Build --config Release --target angelscript-test-feature || ok=0
 
-           if [[ $ok -eq 0 ]] && [[ "${{ matrix.cfg.cc }}" == "cl" ]];
-              if [[ -f  "Build/Libs/Release/angelscript-test-feature.exe" ]] ; then
-                 echo ::group::Run test
+           if [[ $ok -eq 0 ]] && [[ "${{ matrix.cfg.cc }}" == "cl" ]]; then
+              if [[ -f  "Build/Libs/Release/angelscript-test-feature.exe" ]]; then
+                 echo --------------------------------------------
                  ok=1
                  cd Libs/AngelScript/sdk/tests/test_feature/bin
                  ${GITHUB_WORKSPACE}/Build/Libs/Release/angelscript-test-feature.exe || ok=0
-                 echo ::endgroup::
                  if [[ $ok -eq 0 ]]; then
-                    echo Test failed
                     exit 1
                  fi
               else
