@@ -5,7 +5,7 @@
 #include <type_traits> // std::is_same
 
 #if __has_include(<format>)
-#    include <format>
+    #include <format>
 #endif
 
 EWAN::App::App() :
@@ -66,8 +66,8 @@ void EWAN::App::MainLoop()
 {
     Log::PrintInfo("BEGIN MAIN LOOP");
 
-    Window.FPS.Clock.restart();
-    Window.FPS.FrameTime.restart();
+    Window.FPS.ClockFPS.restart();
+    Window.FPS.ClockFrameTime.restart();
 
     bool quit = false;
     while(!Quit)
@@ -92,7 +92,7 @@ void EWAN::App::MainLoop()
 
 namespace
 {
-    // Compile time results of sizeof/alignof as errors :)
+    // Results of sizeof/alignof as compile-time errors :)
     template<typename T>
     void info()
     {
@@ -102,10 +102,10 @@ namespace
     [[maybe_unused]] static void StaticAssert()
     {
 #if 0
-        info<App>();
-        info<Content>();
-        info<Settings>();
-        info<Window>();
+        info<EWAN::App>();
+        info<EWAN::Content>();
+        info<EWAN::Script>();
+        info<EWAN::Window>();
 #endif
 
 #if 0

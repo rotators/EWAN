@@ -119,7 +119,7 @@ void EWAN::Script::Event::Unregister(std::list<as::asIScriptFunction*>& function
 
 bool EWAN::Script::Event::Run(as::asIScriptContext* context)
 {
-    // TODO Validate context result
+    // TODO Script::Event::Run() Validate context result
 
     context->Execute();
 
@@ -128,7 +128,7 @@ bool EWAN::Script::Event::Run(as::asIScriptContext* context)
 
 bool EWAN::Script::Event::Run(as::asIScriptContext* context, float& arg0)
 {
-    // TODO Validate context result
+    // TODO Script::Event::Run(...) Validate context result
 
     context->SetArgFloat(0, arg0);
 
@@ -194,6 +194,7 @@ void EWAN::Script::Event::RunOnFinish(as::asIScriptEngine* engine)
             WriteInfo(engine, "Run event callback : "s + function->GetDeclaration(true, true, true) + " = OnFinish;", function->GetModuleName());
 
         // OnFinish event should ignore all errors during script execution, if possible
+        // TODO OnFinishEvent is currently unsafe
 
         context->Prepare(function);
         context->Execute();

@@ -41,7 +41,10 @@ function( other_target target )
         ]]
     elseif( MSVC )
         set_property( TARGET ${target} APPEND PROPERTY COMPILE_OPTIONS /MT )
+        set_property( TARGET ${target} APPEND PROPERTY COMPILE_OPTIONS /Z7 )
         set_property( TARGET ${target} APPEND PROPERTY LINK_OPTIONS    /OPT:REF )
+        set_property( TARGET ${target} APPEND PROPERTY LINK_OPTIONS    /DEBUG )
+        set_property( TARGET ${target} APPEND PROPERTY LINK_OPTIONS    /LARGEADDRESSAWARE )
     endif()
 endfunction()
 

@@ -7,7 +7,7 @@ include( CompileTarget )
 
 check_cxx_symbol_exists( __has_include string ${PROJECT_NAME}_SYMBOL_HAS_INCLUDE )
 if( NOT ${PROJECT_NAME}_SYMBOL_HAS_INCLUDE )
-    message( FATAL_ERROR "Missing symbol __has_include" )
+    message( FATAL_ERROR "Missing __has_include" )
 endif()
 
 check_cxx_symbol_exists( __func__ string ${PROJECT_NAME}_SYMBOL_FUNC )
@@ -25,6 +25,8 @@ foreach( include IN ITEMS filesystem format source_location )
 endforeach()
 
 ##
+
+set( CMAKE_EXPORT_COMPILE_COMMANDS TRUE )
 
 add_executable( ${PROJECT_NAME} WIN32 )
 add_library( ${PROJECT_NAME}.Core STATIC )
@@ -95,3 +97,12 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     compiler_source_flag( Script.API.cpp -Wno-cast-function-type COMPILER_FLAG_WNO_CAST_FUNCTION_TYPE )
     compiler_source_flag( Script.API.cpp -Wno-useless-cast       COMPILER_FLAG_WNO_USELESS_CAST )
 endif()
+
+## Prettify IDE
+
+set_target_properties( ${PROJECT_NAME}      PROPERTIES FOLDER "${PROJECT_NAME}" )
+set_target_properties( ${PROJECT_NAME}.Core PROPERTIES FOLDER "${PROJECT_NAME}" )
+
+source_group( " "     REGULAR_EXPRESSION "\.[CcHh][Pp][Pp]$" )
+source_group( "CMake" REGULAR_EXPRESSION "[Cc][Mm][Aa][Kk][Ee]" )
+source_group( "Libs"  REGULAR_EXPRESSION "(Libs/.+\.[CcHh][Pp][Pp]$|/nlohmann_json\.natvis$)" )

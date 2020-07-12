@@ -27,6 +27,18 @@ int EWAN::Script::Callback::Pragma(const std::string& pragmaText, as::CScriptBui
     return GetScript(builder.GetEngine())->CallbackPragma(scriptBuilder, pragmaText, data);
 }
 
+// Send event back to Script
+as::asIScriptContext* EWAN::Script::Callback::ContextRequest(as::asIScriptEngine* engine, void* data)
+{
+    return GetScript(engine)->CallbackContextRequest(engine, data);
+}
+
+// Send event back to Script
+void EWAN::Script::Callback::ContextReturn(as::asIScriptEngine* engine, as::asIScriptContext* context, void* data)
+{
+    GetScript(engine)->CallbackContextReturn(engine, context, data);
+}
+
 void EWAN::Script::Callback::ContextUserDataCleanup(as::asIScriptContext* context)
 {
     UserData::Context* contextData = static_cast<UserData::Context*>(context->SetUserData(nullptr, 0));

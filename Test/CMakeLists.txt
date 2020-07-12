@@ -27,21 +27,22 @@ endforeach()
 ##
 ## Test app setup
 ##
-add_executable( ${PROJECT_NAME}.Test )
-target_sources( ${PROJECT_NAME}.Test
+add_executable( ${PROJECT_NAME}.CoreTest EXCLUDE_FROM_ALL )
+target_sources( ${PROJECT_NAME}.CoreTest
     PRIVATE
         ${test_sources}
         ${engine_sources}
 )
-target_include_directories( ${PROJECT_NAME}.Test
+target_include_directories( ${PROJECT_NAME}.CoreTest
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}"
         "${engine_dir}"
         "${PROJECT_BINARY_DIR}/Embed"
 )
 
-target_link_libraries( ${PROJECT_NAME}.Test PRIVATE ${PROJECT_NAME}.Core )
-project_target( ${PROJECT_NAME}.Test )
+target_link_libraries( ${PROJECT_NAME}.CoreTest PRIVATE ${PROJECT_NAME}.Core )
+project_target( ${PROJECT_NAME}.CoreTest )
+set_target_properties( ${PROJECT_NAME}.CoreTest PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD TRUE )
 
 ##
 ## On Windows, copy OpenAL library to build directory
@@ -60,7 +61,7 @@ if( TARGET OpenAL AND WIN32 )
 
     message(STATUS "Check size of void* - ${${PROJECT_NAME}_SIZEOF_VOID_P}")
 
-    add_custom_command( TARGET ${PROJECT_NAME}.Test
+    add_custom_command( TARGET ${PROJECT_NAME}.CoreTest
         POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PROJECT_SOURCE_DIR}/Libs/SFML/extlibs/bin/${openal_dir}/openal32.dll ${CMAKE_CURRENT_BINARY_DIR}/OpenAL32.dll
     )
@@ -69,7 +70,7 @@ endif()
 ##
 ## Run tests right after building test app, for simplicity
 ##
-add_custom_command( TARGET ${PROJECT_NAME}.Test
+add_custom_command( TARGET ${PROJECT_NAME}.CoreTest
     POST_BUILD
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C Release
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -77,5 +78,14 @@ add_custom_command( TARGET ${PROJECT_NAME}.Test
 
 enable_testing()
 foreach( test IN LISTS test_list )
-    add_test( NAME ${test} COMMAND ${PROJECT_NAME}.Test ${test} )
+    add_test( NAME ${test} COMMAND ${PROJECT_NAME}.CoreTest ${test} )
 endforeach()
+
+##
+## Prettify IDE
+##
+set_target_properties( ${PROJECT_NAME}.CoreTest PROPERTIES FOLDER "${PROJECT_NAME}" )
+
+source_group( " "     REGULAR_EXPRESSION "\.[CcHh][Pp][Pp]$" )
+source_group( "CMake" REGULAR_EXPRESSION "[Cc][Mm][Aa][Kk][Ee]" )
+source_group( "Libs"  REGULAR_EXPRESSION "(Libs/.+\.[CcHh][Pp][Pp]$|/nlohmann_json\.natvis$)" )

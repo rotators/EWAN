@@ -16,6 +16,27 @@ namespace EWAN
     class Script
     {
     public:
+        enum class SuspendReason
+        {
+            Unknown,
+            Yield,
+            Suspend
+        };
+
+        class API
+        {
+        public:
+            static bool Init(App* app, as::asIScriptEngine* engine, const std::string& ns = "EWAN");
+            static bool InitEngineCallback(Script* script, as::asIScriptEngine* engine);
+            static bool InitContextCallback(Script* script, as::asIScriptContext* context);
+
+        protected:
+            static void AppLog(App*, std::string text);
+
+        private:
+            static int RegisterContentCache(as::asIScriptEngine* engine, const std::string& cacheName, const std::string& typeName = {});
+        };
+
         class Builder : public as::CScriptBuilder
         {
         public:
@@ -35,6 +56,9 @@ namespace EWAN
         public:
             static int Include(const char* include, const char* from, as::CScriptBuilder* builder, void* data);
             static int Pragma(const std::string& pragmaText, as::CScriptBuilder& builder, void* data);
+
+            static as::asIScriptContext* ContextRequest(as::asIScriptEngine* engine, void* data);
+            static void                  ContextReturn(as::asIScriptEngine* engine, as::asIScriptContext* context, void* data);
 
             static void ContextUserDataCleanup(as::asIScriptContext* context);
             static void EngineUserDataCleanup(as::asIScriptEngine* engine);
@@ -116,7 +140,12 @@ namespace EWAN
         public:
             struct Context
             {
-                bool Dummy = true;
+                EWAN::Script::SuspendReason SuspendReason = EWAN::Script::SuspendReason::Unknown;
+
+                void Reset()
+                {
+                    SuspendReason = EWAN::Script::SuspendReason::Unknown;
+                }
             };
 
             struct Engine
@@ -152,8 +181,9 @@ namespace EWAN
         EWAN::Script::Event Event;
 
     private:
-        std::string          RootDirectory;
-        as::asIScriptEngine* AS = nullptr;
+        std::string                      RootDirectory;
+        as::asIScriptEngine*             AS = nullptr;
+        std::list<as::asIScriptContext*> ContextCache;
 
     public:
         Script();
@@ -161,8 +191,6 @@ namespace EWAN
 
     public:
         bool Init(App* app);
-        bool InitAPI(App* app, as::asIScriptEngine* engine, const std::string& ns = "EWAN");
-        bool InitMessageCallback(as::asIScriptEngine* engine);
         void Finish();
 
         static void WriteInfo(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
@@ -177,6 +205,9 @@ namespace EWAN
 
         bool LoadModuleMetadata(Builder& builder);
 
+        void Yield_Call();
+        void Suspend_Call();
+
     protected:
         bool                 BindImportedFunctions(as::asIScriptEngine* engine);
         bool                 BindImportedFunctions(as::asIScriptModule* module);
@@ -184,8 +215,42 @@ namespace EWAN
         void                 DestroyEngine(as::asIScriptEngine*& engine);
 
     public:
-        int  CallbackInclude(Builder& builder, const std::string& include, const std::string& fromSection, void* data);
-        void CallbackMessage(const as::asSMessageInfo& msg);
-        int  CallbackPragma(Builder& builder, const std::string& pragmaText, void* data);
+        void                  CallbackContextLine(as::asIScriptContext* context);
+        as::asIScriptContext* CallbackContextRequest(as::asIScriptEngine* engine, void* data);
+        void                  CallbackContextReturn(as::asIScriptEngine* engine, as::asIScriptContext* context, void* data);
+        int                   CallbackInclude(Builder& builder, const std::string& include, const std::string& fromSection, void* data);
+        void                  CallbackMessage(const as::asSMessageInfo& msg);
+        int                   CallbackPragma(Builder& builder, const std::string& pragmaText, void* data);
+
+    public:
+        template<typename C, typename T>
+        void AppendStdContainerToArray(const C& container, as::CScriptArray* arr, bool addRef)
+        {
+            if(!container.empty() && arr)
+            {
+                as::asUINT current = arr->GetSize();
+                arr->Resize(static_cast<as::asUINT>(current + container.size()));
+
+                for(T containerObject : container)
+                {
+                    T* arrayObject = static_cast<T*>(arr->At(current++));
+                    *arrayObject   = containerObject;
+                    if(addRef)
+                        (*arrayObject)->AddRef();
+                }
+            }
+        }
+
+        template<typename T>
+        void AppendListToArray(const std::list<T>& container, as::CScriptArray* arr, bool addRef)
+        {
+            AppendStdContainerToArray<std::list<T>, T>(container, arr, addRef);
+        }
+
+        template<typename T>
+        void AppendVectorToArray(const std::vector<T>& container, as::CScriptArray* arr, bool addRef)
+        {
+            AppendStdContainerToArray<std::vector<T>, T>(container, arr, addRef);
+        }
     };
 }

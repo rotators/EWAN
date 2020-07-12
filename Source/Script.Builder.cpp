@@ -5,8 +5,8 @@
 EWAN::Script::Builder::Builder() :
     as::CScriptBuilder()
 {
-    SetIncludeCallback(Callback::Include, nullptr); // redirects to Script::CallbackInclude
-    SetPragmaCallback(Callback::Pragma, nullptr);   // redirects to Script::CallbackPragma
+    SetIncludeCallback(Callback::Include, nullptr); // redirects to Script::CallbackInclude() method
+    SetPragmaCallback(Callback::Pragma, nullptr);   // redirects to Script::CallbackPragma() method
 }
 
 int EWAN::Script::Builder::StartNewModule(as::asIScriptEngine* inEngine, const char* moduleName)

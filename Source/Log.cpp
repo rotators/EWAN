@@ -7,50 +7,78 @@
 #include <filesystem>
 #include <iostream>
 
-static sf::Mutex COutLock;
-
-#if __has_include(<source_location>) || __has_include(<experimental/source_location>)
-void EWAN::Log::Raw(std::string_view message, const ns_source_location::source_location& src /*= ns_source_location::source_location::current() */)
-{
-    sf::Lock lock(COutLock);
-    std::cout << "[" << src.file_name() << ":" << src.line() << "][" << src.function_name() << "]";
-
-    if(!message.empty())
-        std::cout << " " << message;
-
-    std::cout << std::endl;
-}
-#else
-void EWAN::Log::Raw(std::string_view message)
-{
-    sf::Lock lock(COutLock);
-    std::cout << "[???] " << (message.front() != '[' ? " " : "") << message << std::endl;
-}
+#if defined(_WIN32) || defined(_WIN64)
+    #define IS_WINDOWS
+    #if defined(__MINGW32__) || defined(__MINGW64__)
+        #define IS_MINGW
+    #endif
 #endif
 
-void EWAN::Log::PrintInfo(std::string_view message)
+// Prevent sorting includes
+// clang-format off
+#if defined(IS_WINDOWS) && !defined(IS_MINGW)
+
+    #include <windows.h>
+    #include <debugapi.h>
+
+#endif
+// clang-format on
+
+namespace
 {
-    if(!message.empty())
+    sf::Mutex PrintLock;
+
+    void PrintInternal(const std::string& prefix, std::string message)
     {
-        sf::Lock lock(COutLock);
-        std::cout << "[INFO]" << (message.front() != '[' ? " " : "") << message << std::endl;
+        message = "[" + prefix + "]" + (message.front() != '[' ? " " : "") + message;
+
+        sf::Lock lock(PrintLock);
+
+#if defined(IS_WINDOWS) && !defined(IS_MINGW)
+
+        // Play nice with debuggers known to WINAPI
+        if(IsDebuggerPresent())
+        {
+            message += "\n";
+            OutputDebugStringA(message.c_str());
+        }
+        else
+
+#endif
+            std::cout << message << std::endl;
     }
 }
 
-void EWAN::Log::PrintWarning(std::string_view message)
+#if __has_include(<source_location>) || __has_include(<experimental/source_location>)
+
+void EWAN::Log::Raw(const std::string& message, const ns_source_location::source_location& src /*= ns_source_location::source_location::current() */)
 {
-    if(!message.empty())
-    {
-        sf::Lock lock(COutLock);
-        std::cout << "[WARNING]" << (message.front() != '[' ? " " : "") << message << std::endl;
-    }
+    PrintInternal(std::string() + src.file_name() + ":" + std::to_string(src.line()) + "][" + src.function_name(), message);
 }
 
-void EWAN::Log::PrintError(std::string_view message)
+#else
+
+void EWAN::Log::Raw(const std::string& message)
+{
+    PrintInternal("???", message);
+}
+
+#endif
+
+void EWAN::Log::PrintInfo(const std::string& message)
 {
     if(!message.empty())
-    {
-        sf::Lock lock(COutLock);
-        std::cout << "[ERROR]" << (message.front() != '[' ? " " : "") << message << std::endl;
-    }
+        PrintInternal("INFO", message);
+}
+
+void EWAN::Log::PrintWarning(const std::string& message)
+{
+    if(!message.empty())
+        PrintInternal("WARNING", message);
+}
+
+void EWAN::Log::PrintError(const std::string& message)
+{
+    if(!message.empty())
+        PrintInternal("ERROR", message);
 }

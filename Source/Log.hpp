@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <string_view>
 #include <vector>
 
 //
@@ -22,13 +21,13 @@ namespace EWAN
     {
     public:
 #if __has_include(<source_location>) || __has_include(<experimental/source_location>)
-        static void Raw(std::string_view message, const ns_source_location::source_location& src = ns_source_location::source_location::current());
+        static void Raw(const std::string& message, const ns_source_location::source_location& src = ns_source_location::source_location::current());
 #else
-        static void Raw(std::string_view message);
+        static void Raw(const std::string& message);
 #endif
 
-        static void PrintInfo(std::string_view message);
-        static void PrintWarning(std::string_view message);
-        static void PrintError(std::string_view message);
+        static void PrintInfo(const std::string& message);
+        static void PrintWarning(const std::string& message);
+        static void PrintError(const std::string& message);
     };
 }

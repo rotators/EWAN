@@ -123,9 +123,9 @@ bool EWAN::Window::Update(Script& script)
 
 void EWAN::Window::UpdateFPS()
 {
-    if(FPS.Clock.getElapsedTime().asSeconds() >= 1.0f)
+    if(FPS.ClockFPS.getElapsedTime().asSeconds() >= 1.0f)
     {
-        FPS.Clock.restart();
+        FPS.ClockFPS.restart();
         FPS.Count = FPS.Frame;
         FPS.Frame = 0;
 
@@ -140,15 +140,15 @@ void EWAN::Window::Render(Script& script)
 {
     clear();
 
-    float frameTime = FPS.FrameTime.restart().asSeconds();
+    FPS.FrameTime = FPS.ClockFrameTime.restart().asSeconds();
 
-    script.Event.Run(script.Event.OnDraw, frameTime);
+    script.Event.Run(script.Event.OnDraw);
 
     // always last
 
     if(FPS.Visible && FPS.Min != std::numeric_limits<uint16_t>::max())
     {
-        FPS.Text.setString(std::to_string(FPS.Min) + " " + std::to_string(FPS.Count) + " " + std::to_string(FPS.Max) + " " + std::to_string(frameTime));
+        FPS.Text.setString(std::to_string(FPS.Min) + " " + std::to_string(FPS.Count) + " " + std::to_string(FPS.Max) + " " + std::to_string(FPS.FrameTime));
         draw(FPS.Text);
     }
 

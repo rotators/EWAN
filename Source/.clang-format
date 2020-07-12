@@ -1,16 +1,17 @@
-#! clang-format-9
+#! clang-format-10
 #
-# https://releases.llvm.org/9.0.0/tools/clang/docs/ClangFormatStyleOptions.html
+# https://releases.llvm.org/10.0.0/tools/clang/docs/ClangFormatStyleOptions.html
 # https://clang.llvm.org/docs/ClangFormatStyleOptions.html
 #
 
 Language: Cpp
-Standard: Cpp11
+Standard: c++20
 
 AccessModifierOffset:         -4
 AlignAfterOpenBracket:        Align
 AlignConsecutiveAssignments:  true
 AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros:       true
 AlignEscapedNewlines:         Left
 AlignOperands:                true
 AlignTrailingComments:        true
@@ -18,10 +19,13 @@ AlignTrailingComments:        true
 AllowAllConstructorInitializersOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine:             false
-AlwaysBreakBeforeMultilineStrings:         false
+AllowShortLambdasOnASingleLine:            Inline
 
-BinPackArguments:  true
-BinPackParameters: true
+AlwaysBreakBeforeMultilineStrings:         false
+AlwaysBreakTemplateDeclarations:           Yes
+
+BinPackArguments:  false
+BinPackParameters: false
 
 BreakBeforeBraces:            Custom
 BreakConstructorInitializers: AfterColon
@@ -64,7 +68,7 @@ IncludeCategories:
 IncludeIsMainRegex: "(\\.[A-Za-z0-9]+)?$"
 
 IndentCaseLabels:   true
-IndentPPDirectives: AfterHash
+IndentPPDirectives: BeforeHash
 IndentWidth:        4
 
 KeepEmptyLinesAtTheStartOfBlocks: false
@@ -87,13 +91,16 @@ SpaceBeforeCtorInitializerColon:   true
 SpaceBeforeInheritanceColon:       true
 SpaceBeforeParens:                 Never
 SpaceBeforeRangeBasedForLoopColon: true
-#SpaceInEmptyBlock:                false
+SpaceBeforeSquareBrackets:         false
+SpaceInEmptyBlock:                 false
 SpaceInEmptyParentheses:           false
 SpacesBeforeTrailingComments:      1
 SpacesInAngles:                    false
 SpacesInCStyleCastParentheses:     false
+SpacesInConditionalStatement:      false
 SpacesInContainerLiterals:         false
 SpacesInParentheses:               false
 SpacesInSquareBrackets:            false
 
-UseTab: Never
+UseCRLF: false
+UseTab:  Never

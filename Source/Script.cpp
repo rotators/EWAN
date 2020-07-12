@@ -39,7 +39,7 @@ bool EWAN::Script::Init(App* app)
         return false;
     }
 
-    if(!InitAPI(app, engine))
+    if(!API::Init(app, engine))
     {
         WriteError(engine, fail + "cannot register API");
         DestroyEngine(engine);
@@ -105,6 +105,13 @@ bool EWAN::Script::Init(App* app)
     if(!engine->GetModuleCount())
     {
         WriteError(engine, fail + "cannot find any modules (late check)");
+        DestroyEngine(engine);
+        return false;
+    }
+
+    if(engine->GarbageCollect(as::asGC_FULL_CYCLE) == 1)
+    {
+        WriteError(engine, fail + "cannot finish garbage collection");
         DestroyEngine(engine);
         return false;
     }
@@ -233,7 +240,15 @@ bool EWAN::Script::LoadModule_Call(const std::string& fileName, const std::strin
 {
     as::asIScriptContext* context = as::asGetActiveContext();
     if(!context)
+    {
+        Log::PrintError("LoadModule : no context");
         return false;
+    }
+    else if (Text::IsBlank(moduleName))
+    {
+        WriteError(context->GetEngine(), "LoadModule : moduleName is blank");
+        return false;
+    }
 
     return LoadModule(context->GetEngine(), RootDirectory + fileName, moduleName);
 }
@@ -319,7 +334,7 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
         {"OnInit", {{"bool"}, Event.OnInit}},
         {"OnFinish", {{"void"}, Event.OnFinish}},
 
-        {"OnDraw", {{"void", "const float"}, Event.OnDraw}}};
+        {"OnDraw", {{"void"}, Event.OnDraw}}};
 
     as::asIScriptEngine* engine = builder.GetEngine();
 
@@ -348,6 +363,28 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
     }
 
     return true;
+}
+
+//
+
+void EWAN::Script::Suspend_Call()
+{
+    as::asIScriptContext* context = as::asGetActiveContext();
+    if(!context)
+        return;
+
+    UserData::Get(context)->SuspendReason = SuspendReason::Suspend;
+    context->Suspend();
+}
+
+void EWAN::Script::Yield_Call()
+{
+    as::asIScriptContext* context = as::asGetActiveContext();
+    if(!context)
+        return;
+
+    UserData::Get(context)->SuspendReason = SuspendReason::Yield;
+    context->Suspend();
 }
 
 //
@@ -414,7 +451,9 @@ as::asIScriptEngine* EWAN::Script::CreateEngine()
     if(!engine)
         return nullptr;
 
-    if(!InitMessageCallback(engine))
+    int r;
+
+    if(!API::InitEngineCallback(this, engine))
     {
         WriteError(engine, "Cannot set script engine message callback");
         DestroyEngine(engine);
@@ -427,9 +466,8 @@ as::asIScriptEngine* EWAN::Script::CreateEngine()
         {as::asEP_DISALLOW_EMPTY_LIST_ELEMENTS, true},
         {as::asEP_DISALLOW_GLOBAL_VARS, true},
         {as::asEP_OPTIMIZE_BYTECODE, true},
-        {as::asEP_REQUIRE_ENUM_SCOPE, true}};
-
-    int r = 0;
+        {as::asEP_REQUIRE_ENUM_SCOPE, true} //
+    };
 
     for(const auto& property : properties)
     {
@@ -443,6 +481,7 @@ as::asIScriptEngine* EWAN::Script::CreateEngine()
         }
     }
 
+    engine->SetContextCallbacks(Callback::ContextRequest, Callback::ContextReturn, nullptr);
     engine->SetContextUserDataCleanupCallback(Callback::ContextUserDataCleanup);
     engine->SetEngineUserDataCleanupCallback(Callback::EngineUserDataCleanup);
     engine->SetFunctionUserDataCleanupCallback(Callback::FunctionUserDataCleanup);
@@ -475,23 +514,75 @@ void EWAN::Script::DestroyEngine(as::asIScriptEngine*& engine)
 
 //
 
+void EWAN::Script::CallbackContextLine([[maybe_unused]] as::asIScriptContext* context)
+{
+    [[maybe_unused]] int line, column;
+    [[maybe_unused]] const char* sectionName;
+
+    line = context->GetLineNumber(0, &column, &sectionName);
+
+    // context->GetEngine()->WriteMessage(sectionName, line, column, as::asMSGTYPE_INFORMATION, context->GetFunction()->GetDeclaration(true, true, true));
+}
+
+as::asIScriptContext* EWAN::Script::CallbackContextRequest(as::asIScriptEngine* engine, [[maybe_unused]] void* data)
+{
+    as::asIScriptContext* context = nullptr;
+
+    if(ContextCache.empty())
+    {
+        WriteInfo(engine, "Creating script context");
+
+        context = engine->CreateContext();
+
+        if(!API::InitContextCallback(this, context))
+        {
+            WriteError(engine, "Cannot set script context line callback");
+            context->Release();
+            return nullptr; // crash
+        }
+
+        context->SetUserData(new UserData::Context, 0);
+    }
+    else
+    {
+        context = ContextCache.front();
+        ContextCache.pop_front();
+    }
+
+    return context;
+}
+
+void EWAN::Script::CallbackContextReturn([[maybe_unused]] as::asIScriptEngine* engine, as::asIScriptContext* context, [[maybe_unused]] void* data)
+{
+    // WriteInfo(engine, "Caching script context...");
+
+    UserData::Context* contextData = UserData::Get(context);
+
+    contextData->Reset();
+    context->Unprepare();
+
+    ContextCache.push_back(context);
+
+    // WriteInfo(engine, "Caching script context : " + std::to_string(ContextCache.size()) + " total");
+}
+
 int EWAN::Script::CallbackInclude(Builder& builder, const std::string& include, const std::string& fromSection, [[maybe_unused]] void* data)
 {
-    // Path/To/Scripts/
+    // /Path/To/Scripts/
     std::filesystem::path fileName = std::filesystem::path(RootDirectory);
 
-    // Path/To/Scripts/SubDirectory/File.Name
+    // /Path/To/Scripts/SubDirectory/File.Name
     fileName += std::filesystem::path(fromSection);
 
-    // Path/To/Scripts/SubDirectory/
+    // /Path/To/Scripts/SubDirectory/
     fileName.remove_filename();
 
-    // Path/To/Scripts/SubDirectory/../File.Included
+    // /Path/To/Scripts/SubDirectory/../File.Included
     fileName += std::filesystem::path(include);
 
-    // Path/To/Script/File.Included
+    // /Path/To/Scripts/File.Included
     fileName = std::filesystem::path(builder.NormalizePath(fileName.string()));
-
+ 
     std::string sectionName = Text::Replace(std::filesystem::relative(fileName, RootDirectory).make_preferred().string(), "\\", "/");
 
     std::string fileContent;
@@ -506,8 +597,8 @@ int EWAN::Script::CallbackInclude(Builder& builder, const std::string& include, 
 
 void EWAN::Script::CallbackMessage(const as::asSMessageInfo& msg)
 {
-    static const std::function<void(std::string_view)> functions[3] = {&Log::PrintError, &Log::PrintWarning, &Log::PrintInfo};
-    std::function<void(std::string_view)>              function     = functions[msg.type];
+    static const std::function<void(const std::string&)> functions[3] = {&Log::PrintError, &Log::PrintWarning, &Log::PrintInfo};
+    std::function<void(const std::string&)>              function     = functions[msg.type];
 
     std::string log, section = msg.section;
     bool        numbers = msg.row > 0 || msg.col > 0;
@@ -566,7 +657,7 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
             if(!moduleData->Debug)
             {
                 moduleData->Debug = true;
-                WriteInfo(engine, "Module option : debug", module->GetName());
+                WriteInfo(engine, "Module setup : debug", module->GetName());
             }
         }
         else if(pragma == "optional" && pragmargs.empty())
@@ -575,7 +666,7 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
             if(!moduleData->Optional)
             {
                 moduleData->Optional = true;
-                WriteInfo(engine, "Module option : optional", module->GetName());
+                WriteInfo(engine, "Module setup : optional", module->GetName());
             }
         }
         else if(pragma == "poison" && pragmargs.empty())
@@ -584,7 +675,7 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
             if(!moduleData->Poison)
             {
                 moduleData->Poison = true;
-                WriteInfo(engine, "Module option : poisoned", module->GetName());
+                WriteInfo(engine, "Module setup : poisoned", module->GetName());
             }
         }
         else if(pragma == "rename" && pragmargs.size() == 1)
@@ -604,14 +695,14 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
             if(!moduleData->Unload)
             {
                 moduleData->Unload = true;
-                WriteInfo(engine, "Module option : unloading", module->GetName());
+                WriteInfo(engine, "Module setup : unload", module->GetName());
                 if(CallbackPragma(builder, "module poison", data) < 0)
                     return -1;
             }
         }
         else
         {
-            // Mimic scriptbuilder error with little more details
+            // Mimic as::CScriptBuilder error with little more details
             WriteError(engine, "Invalid #pragma directive : #pragma " + pragmaString);
             return -1;
         }

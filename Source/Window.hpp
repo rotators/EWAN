@@ -16,9 +16,11 @@ namespace EWAN
     public:
         struct FPS
         {
-            sf::Clock Clock;
-            sf::Clock FrameTime;
+            sf::Clock ClockFPS;
+            sf::Clock ClockFrameTime;
             sf::Text  Text;
+
+            float FrameTime = 0.0f;
 
             uint16_t Count = 0;
             uint16_t Min   = std::numeric_limits<uint16_t>::max();

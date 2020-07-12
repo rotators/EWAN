@@ -43,6 +43,7 @@ jobs:
     run:  |
           :
           # [Linux] extra setup is needed to install 32bit packages on 64bit host
+
           if [[ ${{ matrix.cfg.arch }} -eq 32 ]]; then
              arch=i386
              sudo dpkg --add-architecture $arch
@@ -121,8 +122,4 @@ jobs:
   - name: Build test
     run:  |
           :
-          # [VisualStudio] '--target' switch is a path to .vcxproj if target name contains dot
-          if [[ "${{ matrix.cfg.cc }}" == "cl" ]]; then
-             path=Test/
-          fi
-          cmake --build Build --config Release --target ${path}EWAN.Test
+          cmake --build Build --config Release --target EWAN.CoreTest
