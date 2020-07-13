@@ -89,8 +89,7 @@ namespace
         "Texture" //
     };
 
-    static const std::vector<const char*> zeroObjRefGcTemplate = {
-    };
+    static const std::vector<const char*> zeroObjRefGcTemplate = {};
 
     for(const auto& obj : zeroObjRefNoHandle)
     {

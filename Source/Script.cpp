@@ -244,7 +244,7 @@ bool EWAN::Script::LoadModule_Call(const std::string& fileName, const std::strin
         Log::PrintError("LoadModule : no context");
         return false;
     }
-    else if (Text::IsBlank(moduleName))
+    else if(Text::IsBlank(moduleName))
     {
         WriteError(context->GetEngine(), "LoadModule : moduleName is blank");
         return false;
@@ -516,7 +516,7 @@ void EWAN::Script::DestroyEngine(as::asIScriptEngine*& engine)
 
 void EWAN::Script::CallbackContextLine([[maybe_unused]] as::asIScriptContext* context)
 {
-    [[maybe_unused]] int line, column;
+    [[maybe_unused]] int         line, column;
     [[maybe_unused]] const char* sectionName;
 
     line = context->GetLineNumber(0, &column, &sectionName);
@@ -582,7 +582,7 @@ int EWAN::Script::CallbackInclude(Builder& builder, const std::string& include, 
 
     // /Path/To/Scripts/File.Included
     fileName = std::filesystem::path(builder.NormalizePath(fileName.string()));
- 
+
     std::string sectionName = Text::Replace(std::filesystem::relative(fileName, RootDirectory).make_preferred().string(), "\\", "/");
 
     std::string fileContent;

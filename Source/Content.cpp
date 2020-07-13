@@ -8,7 +8,7 @@
 #include <type_traits> // std::is_same
 
 #if __has_include(<format>)
-#    include <format>
+    #include <format>
 #endif
 
 // Remember to wear protective goggles :)
