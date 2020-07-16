@@ -4,6 +4,7 @@
 
 #include "Libs/AngelScript.hpp"
 
+#include <functional>
 #include <list>
 #include <map>
 #include <string>
@@ -19,8 +20,8 @@ namespace EWAN
         enum class SuspendReason
         {
             Unknown,
-            Yield,
-            Suspend
+            Delay,
+            Yield
         };
 
         class API
@@ -69,70 +70,43 @@ namespace EWAN
         class Event
         {
         public:
-            class Data
-            {
-            public:
-                std::list<std::string>             Params;
-                std::list<as::asIScriptFunction*>& List;
+            const std::string      Name;
+            std::list<std::string> Params;
 
-            public:
-                Data(std::list<std::string> params, std::list<as::asIScriptFunction*>& list);
+            bool IgnoreExecuteErrors = false;
 
-            public:
-                std::string GetDeclaration(const std::string& name = "f") const;
-                std::string GetDeclaration(as::asIScriptFunction* function) const;
-            };
+        protected:
+            std::list<as::asIScriptFunction*> Functions;
 
-            // Special events; requires snowflake handling
-
-            std::list<as::asIScriptFunction*> OnBuild;
-            std::list<as::asIScriptFunction*> OnInit;
-            std::list<as::asIScriptFunction*> OnFinish;
-
-            // Regular events
-
-            std::list<as::asIScriptFunction*> OnDraw;
-            std::list<as::asIScriptFunction*> OnKeyDown;
-            std::list<as::asIScriptFunction*> OnKeyUp;
-            std::list<as::asIScriptFunction*> OnMouseMove;
-            std::list<as::asIScriptFunction*> OnMouseDown;
-            std::list<as::asIScriptFunction*> OnMouseUp;
+            static std::function<void(as::asIScriptContext*)> NOP;
 
         public:
-            void Register(std::list<as::asIScriptFunction*>& functions, as::asIScriptFunction* function, const std::string& name);
-            void Unregister(as::asIScriptModule* module);
-            void Unregister(std::list<as::asIScriptFunction*>& functions, as::asIScriptEngine* engine, const std::string& name);
-            void Unregister(std::list<as::asIScriptFunction*>& functions, as::asIScriptModule* module, const std::string& name);
+            Event(std::string name, std::list<std::string> params);
+            virtual ~Event();
 
-            bool Run(as::asIScriptContext* context);
-            bool Run(as::asIScriptContext* context, float& arg0);
+        private:
+            Event() = delete;
+
+        public:
+            std::string GetDeclaration(const std::string& name = "f") const;
+            std::string GetDeclaration(as::asIScriptFunction* function) const;
+
+        public:
+            void Register(as::asIScriptFunction* function);
+            void Unregister(as::asIScriptEngine* engine);
+            void Unregister(as::asIScriptModule* module);
+
+            bool Run();
+            bool Run(float& arg0);
+            bool RunBool(bool& result);
+
+        protected:
+            bool Run(std::function<void(as::asIScriptContext* context)> init, std::function<void(as::asIScriptContext* context)> finish);
+            bool Execute(as::asIScriptContext*& context, std::list<as::asIScriptContext*>& yield, std::function<void(as::asIScriptContext* context)> finish);
+
+        public:
             bool RunOnBuild(as::asIScriptModule* module);
             bool RunOnInit(as::asIScriptEngine* engine, as::asIScriptFunction*& function);
-            void RunOnFinish(as::asIScriptEngine* engine);
-
-            template<typename... Args>
-            bool Run(const std::list<as::asIScriptFunction*>& functions, Args&&... args)
-            {
-                if(functions.empty())
-                    return true;
-
-                as::asIScriptContext* context = functions.front()->GetEngine()->RequestContext();
-
-                bool result = true;
-                for(const auto& function : functions)
-                {
-                    context->Prepare(function);
-
-                    if(!Run(context, std::forward<Args>(args)...))
-                    {
-                        result = false;
-                        break;
-                    }
-                }
-
-                context->GetEngine()->ReturnContext(context);
-                return result;
-            }
         };
 
         class UserData
@@ -140,10 +114,12 @@ namespace EWAN
         public:
             struct Context
             {
+                EWAN::Script::Event*        Event         = nullptr;
                 EWAN::Script::SuspendReason SuspendReason = EWAN::Script::SuspendReason::Unknown;
 
                 void Reset()
                 {
+                    Event         = nullptr;
                     SuspendReason = EWAN::Script::SuspendReason::Unknown;
                 }
             };
@@ -151,6 +127,7 @@ namespace EWAN
             struct Engine
             {
                 EWAN::Script* Script = nullptr;
+                std::list<as::asIScriptContext*> ContextCache;
             };
 
             struct Function
@@ -178,12 +155,19 @@ namespace EWAN
         //
 
     public:
-        EWAN::Script::Event Event;
+        // Special events; requires snowflake handling
+
+        Event OnBuild;
+        Event OnInit;
+
+        // Regular events
+
+        Event OnFinish;
+        Event OnDraw;
 
     private:
         std::string                      RootDirectory;
         as::asIScriptEngine*             AS = nullptr;
-        std::list<as::asIScriptContext*> ContextCache;
 
     public:
         Script();
@@ -205,8 +189,8 @@ namespace EWAN
 
         bool LoadModuleMetadata(Builder& builder);
 
+        void Delay_Call();
         void Yield_Call();
-        void Suspend_Call();
 
     protected:
         bool                 BindImportedFunctions(as::asIScriptEngine* engine);

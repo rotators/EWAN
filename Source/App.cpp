@@ -74,8 +74,8 @@ void EWAN::App::MainLoop()
     {
         if(Window.isOpen())
         {
-            quit = !Window.Update(Script);
-            Window.Render(Script);
+            quit = !Window.Update(&Script);
+            Window.Render(&Script);
         }
 
         // always last

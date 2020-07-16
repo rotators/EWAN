@@ -89,7 +89,7 @@ bool EWAN::Window::DrawSprite(const Content& content, const std::string& id)
     return false;
 }
 
-bool EWAN::Window::Update(Script& script)
+bool EWAN::Window::Update(Script* script)
 {
     bool result = true;
 
@@ -103,7 +103,7 @@ bool EWAN::Window::Update(Script& script)
         }
         else if(event.type == sf::Event::KeyPressed)
         {
-            script.Event.Run(script.Event.OnKeyDown);
+            // TODO script.Event.Run(script.Event.OnKeyDown);
 
             if(event.key.shift && event.key.code == sf::Keyboard::Escape)
             {
@@ -136,13 +136,13 @@ void EWAN::Window::UpdateFPS()
     ++FPS.Frame;
 }
 
-void EWAN::Window::Render(Script& script)
+void EWAN::Window::Render(Script* script)
 {
     clear();
 
     FPS.FrameTime = FPS.ClockFrameTime.restart().asSeconds();
 
-    script.Event.Run(script.Event.OnDraw);
+    script->OnDraw.Run();
 
     // always last
 

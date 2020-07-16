@@ -15,7 +15,26 @@ using namespace std::literals::string_literals;
 //
 
 EWAN::Script::Script() :
-    AS(nullptr)
+    AS(nullptr),
+
+    //
+    // Event name defines what kind of metadata script function need to have to become event callback
+    // Function declaration is stored as string list, which holds return type and function parameters
+    //
+    // Event constructor                                  Script code
+    // ------------------------------------------------------------------------------------
+    // Event("OnExample", {"void"}) ..................... [OnExample] void  f();
+    // Event("OnHappens", {"bool"}) ..................... [OnHappens] bool  f();
+    // Event("OnTrigger", {"float", "string", "int"}) ... [OnTrigger] float f(string, int);
+    //
+    // Note that while single function can handle any amount of engine events (as long their signatures are compatibile),
+    // it's currently not possible to detect which event called script function.
+    //
+
+    OnBuild("OnBuild", {"void"}),
+    OnInit("OnInit", {"bool"}),
+    OnFinish("OnFinish", {"void"}),
+    OnDraw("OnDraw", {"void"})
 {}
 
 EWAN::Script::~Script()
@@ -74,7 +93,7 @@ bool EWAN::Script::Init(App* app)
     // `falseFunction` points to first script function which returned false (if any)
     {
         as::asIScriptFunction* falseFunction = nullptr;
-        if(!Event.RunOnInit(engine, falseFunction))
+        if(!OnInit.RunOnInit(engine, falseFunction))
         {
             WriteError(engine, fail + falseFunction->GetDeclaration(true, true, true) + " = false", falseFunction->GetModuleName());
             DestroyEngine(engine);
@@ -128,7 +147,9 @@ void EWAN::Script::Finish()
     {
         Log::PrintInfo("Script finalization...");
 
-        Event.RunOnFinish(AS);
+        OnFinish.IgnoreExecuteErrors = true;
+        OnFinish.Run();
+        OnFinish.Unregister(AS);
         DestroyEngine(AS);
 
         Log::PrintInfo("Script finalization complete");
@@ -223,7 +244,7 @@ bool EWAN::Script::LoadModule(as::asIScriptEngine* engine, const std::string& fi
     }
 
     // [OnBuild] always clears Event.OnBuild
-    if(!LoadModuleMetadata(builder) || !Event.RunOnBuild(module))
+    if(!LoadModuleMetadata(builder) || !OnBuild.RunOnBuild(module))
     {
         WriteError(engine, fail, module->GetName());
         UnloadModule(module);
@@ -282,7 +303,11 @@ bool EWAN::Script::UnloadModule(as::asIScriptModule*& module)
 
     WriteInfo(engine, "Unloading module...", moduleName);
 
-    Event.Unregister(module);
+    OnBuild.Unregister(module);
+    OnInit.Unregister(module);
+    OnFinish.Unregister(module);
+
+    OnDraw.Unregister(module);
 
     module->UnbindAllImportedFunctions();
     module->Discard();
@@ -329,12 +354,12 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
     // it's currently not possible to detect which event called script function.
     //
 
-    static const std::unordered_map<std::string, Event::Data> eventData = {
-        {"OnBuild", {{"void"}, Event.OnBuild}},
-        {"OnInit", {{"bool"}, Event.OnInit}},
-        {"OnFinish", {{"void"}, Event.OnFinish}},
-
-        {"OnDraw", {{"void"}, Event.OnDraw}}};
+    static const std::vector<Event*> eventData = {
+        &OnBuild,
+        &OnInit,
+        &OnFinish,
+        &OnDraw //
+    };
 
     as::asIScriptEngine* engine = builder.GetEngine();
 
@@ -345,19 +370,19 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
         for(const auto& event : eventData)
         {
             // Unknown metadata is silently ignored
-            if(std::find(metadata.second.begin(), metadata.second.end(), event.first) != metadata.second.end())
+            if(std::find(metadata.second.begin(), metadata.second.end(), event->Name) != metadata.second.end())
             {
                 // This is kind of silly way of validating script function signature, but it works, OK?
                 as::asIScriptFunction* function            = engine->GetFunctionById(metadata.first);
-                std::string            expectedDeclaration = event.second.GetDeclaration(function);
+                std::string            expectedDeclaration = event->GetDeclaration(function);
                 as::asIScriptFunction* sameFunction        = function->GetModule()->GetFunctionByDecl(expectedDeclaration.c_str());
                 if(function != sameFunction)
                 {
-                    WriteError(engine, "Invalid function signature for engine event : " + event.first + "\nExpected:\n  " + expectedDeclaration + ";\nFound:\n  " + function->GetDeclaration(true, true, false) + ";", function->GetModuleName());
+                    WriteError(engine, "Invalid function signature for engine event : " + event->Name + "\nExpected:\n  " + expectedDeclaration + ";\nFound:\n  " + function->GetDeclaration(true, true, false) + ";", function->GetModuleName());
                     return false;
                 }
 
-                Event.Register(event.second.List, function, event.first);
+                event->Register(function);
             }
         }
     }
@@ -366,16 +391,6 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
 }
 
 //
-
-void EWAN::Script::Suspend_Call()
-{
-    as::asIScriptContext* context = as::asGetActiveContext();
-    if(!context)
-        return;
-
-    UserData::Get(context)->SuspendReason = SuspendReason::Suspend;
-    context->Suspend();
-}
 
 void EWAN::Script::Yield_Call()
 {
@@ -508,6 +523,18 @@ void EWAN::Script::DestroyEngine(as::asIScriptEngine*& engine)
     }
     allModules.clear();
 
+    // Context cache must be cleared manually before shutting down script engine
+    // Without that user data cleanup callback won't be called, thanks to reference counting
+    UserData::Engine* engineData = UserData::Get(engine);
+    if(!engineData->ContextCache.empty())
+    {
+        for(auto& context : engineData->ContextCache)
+        {
+            context->Release();
+        }
+        engineData->ContextCache.clear();
+    }
+
     engine->ShutDownAndRelease();
     engine = nullptr;
 }
@@ -527,8 +554,9 @@ void EWAN::Script::CallbackContextLine([[maybe_unused]] as::asIScriptContext* co
 as::asIScriptContext* EWAN::Script::CallbackContextRequest(as::asIScriptEngine* engine, [[maybe_unused]] void* data)
 {
     as::asIScriptContext* context = nullptr;
+    UserData::Engine*     engineData = UserData::Get(engine);
 
-    if(ContextCache.empty())
+    if(engineData->ContextCache.empty())
     {
         WriteInfo(engine, "Creating script context");
 
@@ -545,8 +573,8 @@ as::asIScriptContext* EWAN::Script::CallbackContextRequest(as::asIScriptEngine* 
     }
     else
     {
-        context = ContextCache.front();
-        ContextCache.pop_front();
+        context = engineData->ContextCache.front();
+        engineData->ContextCache.pop_front();
     }
 
     return context;
@@ -554,16 +582,15 @@ as::asIScriptContext* EWAN::Script::CallbackContextRequest(as::asIScriptEngine* 
 
 void EWAN::Script::CallbackContextReturn([[maybe_unused]] as::asIScriptEngine* engine, as::asIScriptContext* context, [[maybe_unused]] void* data)
 {
-    // WriteInfo(engine, "Caching script context...");
-
+    UserData::Engine*  engineData  = UserData::Get(engine);
     UserData::Context* contextData = UserData::Get(context);
 
     contextData->Reset();
     context->Unprepare();
 
-    ContextCache.push_back(context);
+    engineData->ContextCache.push_back(context);
 
-    // WriteInfo(engine, "Caching script context : " + std::to_string(ContextCache.size()) + " total");
+    WriteInfo(engine, "Caching script context : " + std::to_string(engineData->ContextCache.size()) + " total");
 }
 
 int EWAN::Script::CallbackInclude(Builder& builder, const std::string& include, const std::string& fromSection, [[maybe_unused]] void* data)
@@ -571,7 +598,7 @@ int EWAN::Script::CallbackInclude(Builder& builder, const std::string& include, 
     // /Path/To/Scripts/
     std::filesystem::path fileName = std::filesystem::path(RootDirectory);
 
-    // /Path/To/Scripts/SubDirectory/File.Name
+    // /Path/To/Scripts/SubDirectory/File.Main
     fileName += std::filesystem::path(fromSection);
 
     // /Path/To/Scripts/SubDirectory/

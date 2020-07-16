@@ -146,7 +146,7 @@ namespace
 
     _(ok, engine->RegisterObjectMethod("Script", "bool LoadModule(string&in fileName, string&in moduleName) const", as::asMETHOD(Script, LoadModule_Call), as::asCALL_THISCALL));
     _(ok, engine->RegisterObjectMethod("Script", "bool UnloadModule(string&in moduleName) const", as::asMETHOD(Script, UnloadModule_Call), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod("Script", "void Yield()", as::asMETHOD(Script, Yield_Call), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Script", "void Yield() const", as::asMETHOD(Script, Yield_Call), as::asCALL_THISCALL));
 
     //
 

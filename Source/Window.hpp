@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Content.hpp"
-#include "Script.hpp"
 
 #include "Libs/SFML.hpp"
 
@@ -11,6 +10,8 @@
 
 namespace EWAN
 {
+    class Script;
+
     class Window : public sf::RenderWindow
     {
     public:
@@ -46,8 +47,8 @@ namespace EWAN
 
         bool DrawSprite(const Content& content, const std::string& id);
 
-        bool Update(Script& script);
+        bool Update(Script* script);
         void UpdateFPS();
-        void Render(Script& script);
+        void Render(Script* script);
     };
 }
