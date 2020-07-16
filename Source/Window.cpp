@@ -89,7 +89,7 @@ bool EWAN::Window::DrawSprite(const Content& content, const std::string& id)
     return false;
 }
 
-bool EWAN::Window::Update(Script* script)
+bool EWAN::Window::Update([[maybe_unused]] Script* script)
 {
     bool result = true;
 

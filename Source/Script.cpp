@@ -15,8 +15,6 @@ using namespace std::literals::string_literals;
 //
 
 EWAN::Script::Script() :
-    AS(nullptr),
-
     //
     // Event name defines what kind of metadata script function need to have to become event callback
     // Function declaration is stored as string list, which holds return type and function parameters
@@ -34,7 +32,9 @@ EWAN::Script::Script() :
     OnBuild("OnBuild", {"void"}),
     OnInit("OnInit", {"bool"}),
     OnFinish("OnFinish", {"void"}),
-    OnDraw("OnDraw", {"void"})
+    OnDraw("OnDraw", {"void"}),
+
+    AS(nullptr)
 {}
 
 EWAN::Script::~Script()
@@ -558,7 +558,7 @@ as::asIScriptContext* EWAN::Script::CallbackContextRequest(as::asIScriptEngine* 
 
     if(engineData->ContextCache.empty())
     {
-        WriteInfo(engine, "Creating script context");
+        // WriteInfo(engine, "Creating script context");
 
         context = engine->CreateContext();
 
@@ -590,7 +590,7 @@ void EWAN::Script::CallbackContextReturn([[maybe_unused]] as::asIScriptEngine* e
 
     engineData->ContextCache.push_back(context);
 
-    WriteInfo(engine, "Caching script context : " + std::to_string(engineData->ContextCache.size()) + " total");
+    // WriteInfo(engine, "Caching script context : " + std::to_string(engineData->ContextCache.size()) + " total");
 }
 
 int EWAN::Script::CallbackInclude(Builder& builder, const std::string& include, const std::string& fromSection, [[maybe_unused]] void* data)
