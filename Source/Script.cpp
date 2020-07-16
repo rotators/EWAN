@@ -553,7 +553,7 @@ void EWAN::Script::CallbackContextLine([[maybe_unused]] as::asIScriptContext* co
 
 as::asIScriptContext* EWAN::Script::CallbackContextRequest(as::asIScriptEngine* engine, [[maybe_unused]] void* data)
 {
-    as::asIScriptContext* context = nullptr;
+    as::asIScriptContext* context    = nullptr;
     UserData::Engine*     engineData = UserData::Get(engine);
 
     if(engineData->ContextCache.empty())

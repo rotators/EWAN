@@ -297,4 +297,3 @@ bool EWAN::Script::Event::RunOnInit(as::asIScriptEngine* engine, as::asIScriptFu
 
     return result;
 }
-

@@ -126,7 +126,7 @@ namespace EWAN
 
             struct Engine
             {
-                EWAN::Script* Script = nullptr;
+                EWAN::Script*                    Script = nullptr;
                 std::list<as::asIScriptContext*> ContextCache;
             };
 
@@ -166,8 +166,8 @@ namespace EWAN
         Event OnDraw;
 
     private:
-        std::string                      RootDirectory;
-        as::asIScriptEngine*             AS = nullptr;
+        std::string          RootDirectory;
+        as::asIScriptEngine* AS = nullptr;
 
     public:
         Script();
