@@ -15,5 +15,5 @@ updates:
   directory: "/"
   schedule:
    interval: "monthly"
-  reviewers:
+  assignees:
   - "wipe2238"
