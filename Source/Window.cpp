@@ -76,10 +76,8 @@ void EWAN::Window::Open_Call(sf::Uint32 width /*= 0 */, sf::Uint32 height /*= 0 
 
 //
 
-bool EWAN::Window::DrawSprite(const Content& content, const std::string& id)
+bool EWAN::Window::Draw(sf::Sprite* sprite)
 {
-    sf::Sprite* sprite = content.Sprite.GetAs<sf::Sprite>(id);
-
     if(sprite)
     {
         draw(*sprite);
@@ -87,6 +85,11 @@ bool EWAN::Window::DrawSprite(const Content& content, const std::string& id)
     }
 
     return false;
+}
+
+bool EWAN::Window::Draw(const Content& content, const std::string& id)
+{
+    return Draw(content.Sprite.GetAs<sf::Sprite>(id));
 }
 
 bool EWAN::Window::Update([[maybe_unused]] Script* script)

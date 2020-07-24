@@ -35,7 +35,7 @@ namespace EWAN
             static void AppLog(App*, std::string text);
 
         private:
-            static int RegisterContentCache(as::asIScriptEngine* engine, const std::string& cacheName, const std::string& typeName = {});
+            static int RegisterContentCache(as::asIScriptEngine* engine, const std::string& type, const std::string& subtype = {});
         };
 
         class Builder : public as::CScriptBuilder

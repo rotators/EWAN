@@ -366,6 +366,8 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
     // Process only functions with metadata
     for(const auto& metadata : builder.GetAllMetadataForFunc())
     {
+        as::asIScriptFunction* function = engine->GetFunctionById(metadata.first);
+
         // Check metadata against engine events list
         for(const auto& event : eventData)
         {
@@ -373,7 +375,6 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
             if(std::find(metadata.second.begin(), metadata.second.end(), event->Name) != metadata.second.end())
             {
                 // This is kind of silly way of validating script function signature, but it works, OK?
-                as::asIScriptFunction* function            = engine->GetFunctionById(metadata.first);
                 std::string            expectedDeclaration = event->GetDeclaration(function);
                 as::asIScriptFunction* sameFunction        = function->GetModule()->GetFunctionByDecl(expectedDeclaration.c_str());
                 if(function != sameFunction)

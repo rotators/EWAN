@@ -7,6 +7,8 @@
 
 #include "Libs/SFML.hpp"
 
+#include <type_traits> // std::is_same
+
 //#define SCRIPT_REGISTRATION_CHECK
 
 using namespace std::literals::string_literals;
@@ -15,16 +17,16 @@ namespace
 {
 #if !defined(SCRIPT_REGISTRATION_CHECK)
 
-    static inline void _(bool& ok, int r)
+    static inline void _(int& ok, int r)
     {
-        if(ok)
-            ok = r >= 0;
+        if(ok >= 0)
+            ok = (r >= 0) ? 0 : -1;
     }
 
 #else
 
     #define _(ok, expr)                                        \
-        if(ok)                                                 \
+        if(ok >= 0)                                            \
         {                                                      \
             int r = expr;                                      \
             Log::Raw(""s + #expr + " = " + std::to_string(r)); \
@@ -32,6 +34,21 @@ namespace
         }
 
 #endif
+
+    template<typename T>
+    std::string TypenameToString()
+    {
+        std::string result;
+
+        if constexpr(std::is_same_v<T, float>)
+            result = "float";
+        else if constexpr(std::is_same_v<T, int32_t>)
+            result = "int32";
+        else if constexpr(std::is_same_v<T, uint32_t>)
+            result = "uint32";
+
+        return result;
+    }
 }
 
 /* static */ void EWAN::Script::API::AppLog(App*, std::string text)
@@ -46,10 +63,12 @@ namespace
 
 /* static */ bool EWAN::Script::API::Init(App* app, as::asIScriptEngine* engine, const std::string& ns /*= "EWAN" */)
 {
-    bool ok = true;
+    int ok = 0;
 
     if(Text::IsBlank(ns))
         return false;
+
+    // Register vanilla addons
 
     RegisterScriptArray(engine, true);
     RegisterStdString(engine);
@@ -81,15 +100,19 @@ namespace
         "GameInfo",
         "Script",
         "Window",
-        "WindowFPS" //
+        "WindowFPS"
+        //
     };
 
     static const std::vector<const char*> zeroObjRefNoCount = {
         "Sprite",
-        "Texture" //
+        "Texture"
+        //
     };
 
-    static const std::vector<const char*> zeroObjRefGcTemplate = {};
+    static const std::vector<const char*> zeroObjRefGcTemplate = {
+        //
+    };
 
     for(const auto& obj : zeroObjRefNoHandle)
     {
@@ -105,10 +128,6 @@ namespace
     {
         _(ok, engine->RegisterObjectType(obj, 0, as::asOBJ_REF | as::asOBJ_GC | as::asOBJ_TEMPLATE));
     }
-
-    _(ok, RegisterContentCache(engine, "ContentCache"));
-    _(ok, RegisterContentCache(engine, "ContentSprite", "Sprite@"));
-    _(ok, RegisterContentCache(engine, "ContentTexture", "Texture@"));
 
     // NOTE: Methods marked with 'SFML' are binding directly to SFML
     //       In most cases asMETHODPR() needs to be used instead of asMETHOD()
@@ -133,6 +152,12 @@ namespace
     _(ok, engine->RegisterObjectMethod("Content", "size_t Size()", as::asMETHOD(Content, Size), as::asCALL_THISCALL));
     _(ok, engine->RegisterObjectMethod("Content", "bool LoadFile(string&in fileName, string&in id)", as::asMETHOD(Content, LoadFile), as::asCALL_THISCALL));
     _(ok, engine->RegisterObjectMethod("Content", "size_t LoadDirectory(string&in directory)", as::asMETHOD(Content, LoadDirectory), as::asCALL_THISCALL));
+
+    //
+
+    _(ok, RegisterContentCache(engine, "ContentCache"));
+    _(ok, RegisterContentCache(engine, "ContentSprite", "Sprite@"));
+    _(ok, RegisterContentCache(engine, "ContentTexture", "Texture@"));
 
     //
 
@@ -173,7 +198,8 @@ namespace
 
     _(ok, engine->RegisterObjectMethod("Window", "void Open(uint32 width = 0, uint32 height = 0, uint8 bitsPerPixel = 32, string&in title = \"\", uint32 style = WindowStyle::Default)", as::asMETHOD(Window, Open_Call), as::asCALL_THISCALL));
     _(ok, engine->RegisterObjectMethod("Window", "void Close()", as::asMETHOD(Window, close), as::asCALL_THISCALL)); // SFML
-    _(ok, engine->RegisterObjectMethod("Window", "bool DrawSprite(const Content&in content, string&in spriteId)", as::asMETHOD(Window, DrawSprite), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Window", "bool Draw(Sprite@ sprite)", as::asMETHODPR(Window, Draw, (sf::Sprite*), bool), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Window", "bool Draw(const Content&in content, string&in spriteId)", as::asMETHODPR(Window, Draw, (const Content&, const std::string&), bool), as::asCALL_THISCALL));
 
     //
 
@@ -190,7 +216,7 @@ namespace
 
     _(ok, engine->RegisterGlobalProperty(Text::Join(std::vector<std::string> {ns, "::App App"}, "").c_str(), app));
 
-    return ok;
+    return ok >= 0;
 }
 
 // As G++ options -Wno-cast-function-type/-Wno-useless-cast are enabled only for *this* file,
@@ -208,30 +234,27 @@ namespace
 
 //
 
-/* static */ int EWAN::Script::API::RegisterContentCache(as::asIScriptEngine* engine, const std::string& cacheName, const std::string& typeName /*= {} */)
+/* static */ int EWAN::Script::API::RegisterContentCache(as::asIScriptEngine* engine, const std::string& type, const std::string& subtype /*= {} */)
 {
     using namespace EWAN;
 
-    bool ok = true;
+    int ok = 0;
 
-    if(typeName.empty())
-    {
-        _(ok, engine->RegisterObjectMethod(cacheName.c_str(), "bool New(string&in id)", as::asMETHOD(Content::Cache, New), as::asCALL_THISCALL));
-    }
-    else
-    {
-        _(ok, engine->RegisterObjectMethod(cacheName.c_str(), (typeName + " New(string&in id)").c_str(), as::asMETHOD(Content::Cache, New), as::asCALL_THISCALL));
-    }
+    const std::string boolOrSubtype = (subtype.empty() ? "bool" : subtype);
 
-    _(ok, engine->RegisterObjectMethod(cacheName.c_str(), "bool   Delete(string&in id)", as::asMETHOD(Content::Cache, Delete), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod(cacheName.c_str(), "size_t DeleteAll()", as::asMETHOD(Content::Cache, DeleteAll), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod(cacheName.c_str(), "size_t Size()", as::asMETHOD(Content::Cache, Size), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod(cacheName.c_str(), "bool   Exists(string&in id)", as::asMETHOD(Content::Cache, Exists), as::asCALL_THISCALL));
+    // Generic cache returns bool when creating new object
+    // Custom cache returns newly created subtype
+    _(ok, engine->RegisterObjectMethod(type.c_str(), (boolOrSubtype + " New(string&in id)").c_str(), as::asMETHOD(Content::Cache, New), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod(type.c_str(), "bool   Delete(string&in id)", as::asMETHOD(Content::Cache, Delete), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod(type.c_str(), "size_t DeleteAll()", as::asMETHOD(Content::Cache, DeleteAll), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod(type.c_str(), "size_t Size()", as::asMETHOD(Content::Cache, Size), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod(type.c_str(), "bool   Exists(string&in id)", as::asMETHOD(Content::Cache, Exists), as::asCALL_THISCALL));
 
-    if(!typeName.empty())
+    // Custom cache can return subtype directly
+    if(!subtype.empty())
     {
-        _(ok, engine->RegisterObjectMethod(cacheName.c_str(), (typeName + " Get(string&in id, bool silent = true)").c_str(), as::asMETHOD(Content::Cache, Get), as::asCALL_THISCALL));
+        _(ok, engine->RegisterObjectMethod(type.c_str(), (subtype + " Get(string&in id, bool silent = true)").c_str(), as::asMETHOD(Content::Cache, Get), as::asCALL_THISCALL));
     }
 
-    return ok ? 0 : -1;
+    return ok;
 }

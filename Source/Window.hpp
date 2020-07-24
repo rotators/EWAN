@@ -45,7 +45,8 @@ namespace EWAN
 
         void Open_Call(sf::Uint32 width = 0, sf::Uint32 height = 0, sf::Uint32 bitsPerPixel = 32, const std::string& title = {}, sf::Uint32 style = sf::Style::Default);
 
-        bool DrawSprite(const Content& content, const std::string& id);
+        bool Draw(sf::Sprite* sprite);
+        bool Draw(const Content& content, const std::string& id);
 
         bool Update(Script* script);
         void UpdateFPS();
