@@ -4,6 +4,7 @@
 
 #include "Libs/AngelScript.hpp"
 
+#include <cstdint>
 #include <functional>
 #include <list>
 #include <map>
@@ -20,7 +21,6 @@ namespace EWAN
         enum class SuspendReason
         {
             Unknown,
-            Delay,
             Yield
         };
 
@@ -97,7 +97,7 @@ namespace EWAN
             void Unregister(as::asIScriptModule* module);
 
             bool Run();
-            bool Run(float& arg0);
+            bool Run(const int32_t& arg0);
             bool RunBool(bool& result);
 
         protected:
@@ -132,7 +132,7 @@ namespace EWAN
 
             struct Function
             {
-                bool Dummy = true;
+                bool Debug = false;
             };
 
             struct Module
@@ -146,6 +146,8 @@ namespace EWAN
             };
 
         public:
+            static constexpr as::asPWORD IDX = 0x1207;
+
             static Context*  Get(as::asIScriptContext* context);
             static Engine*   Get(as::asIScriptEngine* engine);
             static Function* Get(as::asIScriptFunction* function);
@@ -164,8 +166,11 @@ namespace EWAN
 
         Event OnFinish;
         Event OnDraw;
+        Event OnKeyDown;
+        Event OnKeyUp;
 
     private:
+        std::vector<Event*>  AllEvents;
         std::string          RootDirectory;
         as::asIScriptEngine* AS = nullptr;
 
@@ -189,7 +194,9 @@ namespace EWAN
 
         bool LoadModuleMetadata(Builder& builder);
 
-        void Delay_Call();
+        std::string GetContextFunctionDetails(as::asIScriptContext* context, as::asUINT stackLevel = 0);
+
+        std::string CurrentEventName_Call();
         void Yield_Call();
 
     protected:

@@ -10,6 +10,7 @@
 
 namespace EWAN
 {
+    class App;
     class Script;
 
     class Window : public sf::RenderWindow
@@ -48,7 +49,7 @@ namespace EWAN
         bool Draw(sf::Sprite* sprite);
         bool Draw(const Content& content, const std::string& id);
 
-        bool Update(Script* script);
+        void Update(App* app);
         void UpdateFPS();
         void Render(Script* script);
     };

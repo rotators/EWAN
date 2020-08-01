@@ -1,5 +1,6 @@
 #include "Window.hpp"
 
+#include "App.hpp"
 #include "Log.hpp"
 #include "Script.hpp"
 
@@ -92,27 +93,33 @@ bool EWAN::Window::Draw(const Content& content, const std::string& id)
     return Draw(content.Sprite.GetAs<sf::Sprite>(id));
 }
 
-bool EWAN::Window::Update([[maybe_unused]] Script* script)
+void EWAN::Window::Update(App* app)
 {
-    bool result = true;
-
     sf::Event event;
     while(pollEvent(event))
     {
         if(event.type == sf::Event::Closed)
         {
             Log::Raw("Event::Closed");
-            result = false;
+            app->Quit = true;
         }
         else if(event.type == sf::Event::KeyPressed)
         {
-            // TODO script.Event.Run(script.Event.OnKeyDown);
+            app->Keyboard = event.key;
+            app->Script.OnKeyDown.Run(app->Keyboard.code);
 
-            if(event.key.shift && event.key.code == sf::Keyboard::Escape)
+            // Hardcoded shortcut, oh noes!
+            if(event.key.control && event.key.code == sf::Keyboard::Key::C)
             {
-                Log::Raw("Event::Keypressed Shift+Escape");
-                result = false;
+                Log::Raw("Event : Keypressed : Control+C");
+                app->Quit = true;
+                app->Restart = false;
             }
+        }
+        else if(event.type == sf::Event::KeyReleased)
+        {
+            app->Keyboard = event.key;
+            app->Script.OnKeyUp.Run(app->Keyboard.code);
         }
         else if(event.type == sf::Event::Resized)
         {
@@ -120,8 +127,6 @@ bool EWAN::Window::Update([[maybe_unused]] Script* script)
             setView(sf::View(visibleArea));
         }
     }
-
-    return result;
 }
 
 void EWAN::Window::UpdateFPS()

@@ -6,7 +6,7 @@ using namespace std::literals::string_literals;
 
 static inline EWAN::Script* GetScript(as::asIScriptEngine* engine)
 {
-    return static_cast<EWAN::Script::UserData::Engine*>(engine->GetUserData(0))->Script;
+    return static_cast<EWAN::Script::UserData::Engine*>(engine->GetUserData(EWAN::Script::UserData::IDX))->Script;
 }
 
 //
@@ -41,24 +41,24 @@ void EWAN::Script::Callback::ContextReturn(as::asIScriptEngine* engine, as::asIS
 
 void EWAN::Script::Callback::ContextUserDataCleanup(as::asIScriptContext* context)
 {
-    UserData::Context* contextData = static_cast<UserData::Context*>(context->SetUserData(nullptr, 0));
+    UserData::Context* contextData = static_cast<UserData::Context*>(context->SetUserData(nullptr, UserData::IDX));
     delete contextData;
 }
 
 void EWAN::Script::Callback::EngineUserDataCleanup(as::asIScriptEngine* engine)
 {
-    UserData::Engine* engineData = static_cast<UserData::Engine*>(engine->SetUserData(nullptr, 0));
+    UserData::Engine* engineData = static_cast<UserData::Engine*>(engine->SetUserData(nullptr, UserData::IDX));
     delete engineData;
 }
 
 void EWAN::Script::Callback::FunctionUserDataCleanup(as::asIScriptFunction* function)
 {
-    UserData::Function* functionData = static_cast<UserData::Function*>(function->SetUserData(nullptr, 0));
+    UserData::Function* functionData = static_cast<UserData::Function*>(function->SetUserData(nullptr, UserData::IDX));
     delete functionData;
 }
 
 void EWAN::Script::Callback::ModuleUserDataCleanup(as::asIScriptModule* module)
 {
-    UserData::Module* moduleData = static_cast<UserData::Module*>(module->SetUserData(nullptr, 0));
+    UserData::Module* moduleData = static_cast<UserData::Module*>(module->SetUserData(nullptr, UserData::IDX));
     delete moduleData;
 }

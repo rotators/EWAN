@@ -5,6 +5,8 @@
 #include "Script.hpp"
 #include "Window.hpp"
 
+#include "Libs/SFML.hpp"
+
 #include <cstdint>
 
 namespace EWAN
@@ -16,10 +18,12 @@ namespace EWAN
 
         bool    Finished = false;
         bool    Quit     = false;
-        uint8_t Unused0[2];
+        bool    Restart  = false;
+        uint8_t Unused0[1];
 
         EWAN::Content  Content;
         EWAN::GameInfo GameInfo;
+        sf::Event::KeyEvent Keyboard;
         EWAN::Script   Script;
         EWAN::Window   Window;
 

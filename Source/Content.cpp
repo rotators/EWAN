@@ -5,7 +5,7 @@
 
 #include <algorithm>
 #include <filesystem>
-#include <type_traits> // std::is_same
+#include <type_traits> // std::is_same_v
 
 #if __has_include(<format>)
     #include <format>
@@ -67,7 +67,8 @@ namespace
 
     static void* NewTexture()
     {
-        return new sf::Sprite;
+        return new sf::Texture;
+
     }
 
     static void DeleteTexture(void* data)

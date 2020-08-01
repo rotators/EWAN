@@ -25,17 +25,26 @@ EWAN::Script::Script() :
     // Event("OnHappens", {"bool"}) ..................... [OnHappens] bool  f();
     // Event("OnTrigger", {"float", "string", "int"}) ... [OnTrigger] float f(string, int);
     //
-    // Note that while single function can handle any amount of engine events (as long their signatures are compatibile),
-    // it's currently not possible to detect which event called script function.
+    // Note that single function can handle any amount of engine events (as long their signatures are compatibile)
     //
 
     OnBuild("OnBuild", {"void"}),
     OnInit("OnInit", {"bool"}),
     OnFinish("OnFinish", {"void"}),
     OnDraw("OnDraw", {"void"}),
+    // TODO allow engine's script namespace customization
+    OnKeyDown("OnKeyDown", {"void", "const EWAN::Key"}),
+    OnKeyUp("OnKeyUp", {"void", "const EWAN::Key"})
+{
+    // Cache all events
+    AllEvents.push_back(&OnBuild);
+    AllEvents.push_back(&OnInit);
+    AllEvents.push_back(&OnFinish);
+    AllEvents.push_back(&OnDraw);
+    AllEvents.push_back(&OnKeyDown);
+    AllEvents.push_back(&OnKeyUp);
 
-    AS(nullptr)
-{}
+}
 
 EWAN::Script::~Script()
 {
@@ -120,7 +129,7 @@ bool EWAN::Script::Init(App* app)
         }
     }
 
-    // There might be no modules left, if all modules are marked as optional
+    // There might be no modules left, if all modules are marked as optional and cannot be built
     if(!engine->GetModuleCount())
     {
         WriteError(engine, fail + "cannot find any modules (late check)");
@@ -128,7 +137,7 @@ bool EWAN::Script::Init(App* app)
         return false;
     }
 
-    if(engine->GarbageCollect(as::asGC_FULL_CYCLE) == 1)
+    if(engine->GarbageCollect(as::asGC_FULL_CYCLE) != 0)
     {
         WriteError(engine, fail + "cannot finish garbage collection");
         DestroyEngine(engine);
@@ -212,7 +221,7 @@ bool EWAN::Script::LoadModule(as::asIScriptEngine* engine, const std::string& fi
         return false;
     }
 
-    // Set script section name as script filename relative to RootDirectory, with enforced *NIX path separators
+    // Section name is set to script filename relative to RootDirectory, with enforced *NIX path separators
     const std::string sectionName = Text::Replace(std::filesystem::relative(fileName, RootDirectory).string(), "\\", "/");
 
     r = builder.AddSectionFromMemory(sectionName.c_str(), fileContent.c_str());
@@ -240,10 +249,10 @@ bool EWAN::Script::LoadModule(as::asIScriptEngine* engine, const std::string& fi
     // All script functions must have UserData set
     for(as::asUINT f = 0, fLen = module->GetFunctionCount(); f < fLen; f++)
     {
-        module->GetFunctionByIndex(f)->SetUserData(new UserData::Function, 0);
+        module->GetFunctionByIndex(f)->SetUserData(new UserData::Function, UserData::IDX);
     }
 
-    // [OnBuild] always clears Event.OnBuild
+    // [OnBuild] always clears OnBuild.Functions
     if(!LoadModuleMetadata(builder) || !OnBuild.RunOnBuild(module))
     {
         WriteError(engine, fail, module->GetName());
@@ -283,7 +292,7 @@ bool EWAN::Script::LoadInitModule(const GameInfo& game, as::asIScriptEngine* eng
 
 bool EWAN::Script::UnloadModule(as::asIScriptModule*& module)
 {
-    // Disallow unloading currently used module
+    // Disallow unloading module(s) in use
     as::asIScriptContext* context = as::asGetActiveContext();
     if(context)
     {
@@ -297,17 +306,16 @@ bool EWAN::Script::UnloadModule(as::asIScriptModule*& module)
         }
     }
 
-    // Cache data used for post-discard message
+    // Cache data used by post-discard message
     as::asIScriptEngine* engine     = module->GetEngine();
     const std::string    moduleName = module->GetName();
 
     WriteInfo(engine, "Unloading module...", moduleName);
 
-    OnBuild.Unregister(module);
-    OnInit.Unregister(module);
-    OnFinish.Unregister(module);
-
-    OnDraw.Unregister(module);
+    for(const auto& event : AllEvents)
+    {
+        event->Unregister(module);
+    }
 
     module->UnbindAllImportedFunctions();
     module->Discard();
@@ -337,49 +345,58 @@ bool EWAN::Script::UnloadModule_Call(const std::string& moduleName)
 
 bool EWAN::Script::LoadModuleMetadata(Builder& builder)
 {
-    //
-    // Event name defines what kind of metadata script function need to have to become event callback
-    // Function declaration is stored as string list, which holds return type and function parameters
-    // Container is a reference to list of AngelScript functions, holding results of metadata parsing
-    //
-    // {event}, {{function, declaration, list}, container}
-    //
-    // Event definition                                               Script code
-    // ------------------------------------------------------------------------------------------------
-    // {"OnExample", {{"void"}, Event.Example}} ..................... [OnExample] void  f();
-    // {"OnHappens", {{"bool"}, Event.Happens}} ..................... [OnHappens] bool  f();
-    // {"OnTrigger", {{"float", "string", "int"}, Event.Trigger}} ... [OnTrigger] float f(string, int);
-    //
-    // Note that while single function can handle any amount of engine events (as long their signatures are compatibile),
-    // it's currently not possible to detect which event called script function.
-    //
-
-    static const std::vector<Event*> eventData = {
-        &OnBuild,
-        &OnInit,
-        &OnFinish,
-        &OnDraw //
-    };
-
     as::asIScriptEngine* engine = builder.GetEngine();
+    as::asIScriptModule* module = builder.GetModule();
 
-    // Process only functions with metadata
+    // Process "slow" pragmas (requires module to be built first)
+
+    if(UserData::Get(module)->Debug) // #pragma module debug
+    {
+        for(as::asUINT f=0, fLen = module->GetFunctionCount(); f < fLen; f++)
+        {
+            as::asIScriptFunction* function = module->GetFunctionByIndex(f);
+            UserData::Get(function)->Debug = true;
+        }
+    }
+
+    // Process functions with metadata
+
     for(const auto& metadata : builder.GetAllMetadataForFunc())
     {
         as::asIScriptFunction* function = engine->GetFunctionById(metadata.first);
 
-        // Check metadata against engine events list
-        for(const auto& event : eventData)
+        // Check [Debug *] metadata
+        // This should checked early, as other metadata might want to generate debug messages
+        for(const auto& metadataText : metadata.second)
         {
-            // Unknown metadata is silently ignored
+            std::vector<std::string> text = Text::Split(metadataText, ' ');
+
+            if(text.front() == "Debug" && text.size() == 2)
+            {
+                if(text.at(1) == "ON")
+                    UserData::Get(function)->Debug = true;
+                else if(text.at(1) == "OFF")
+                    UserData::Get(function)->Debug = false;
+            }
+        }
+
+        // Check [On*] metadata
+        for(const auto& event : AllEvents)
+        {
+            if(event->Name.substr(0, 2) != "On")
+            {
+                WriteError(engine, "Invalid event name : "s + event->Name);
+                return false;
+            }
+
             if(std::find(metadata.second.begin(), metadata.second.end(), event->Name) != metadata.second.end())
             {
                 // This is kind of silly way of validating script function signature, but it works, OK?
                 std::string            expectedDeclaration = event->GetDeclaration(function);
-                as::asIScriptFunction* sameFunction        = function->GetModule()->GetFunctionByDecl(expectedDeclaration.c_str());
+                as::asIScriptFunction* sameFunction        = module->GetFunctionByDecl(expectedDeclaration.c_str());
                 if(function != sameFunction)
                 {
-                    WriteError(engine, "Invalid function signature for engine event : " + event->Name + "\nExpected:\n  " + expectedDeclaration + ";\nFound:\n  " + function->GetDeclaration(true, true, false) + ";", function->GetModuleName());
+                    WriteError(engine, "Invalid function signature for event : " + event->Name + "\nExpected:\n  " + expectedDeclaration + ";\nFound:\n  " + function->GetDeclaration(true, true, false) + ";", module->GetName());
                     return false;
                 }
 
@@ -392,6 +409,35 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
 }
 
 //
+
+std::string EWAN::Script::GetContextFunctionDetails(as::asIScriptContext* context, as::asUINT stackLevel /*= 0 */)
+{
+
+    int         line, column;
+    const char* sectionName;
+
+    line = context->GetLineNumber(stackLevel, &column, &sectionName);
+    as::asIScriptFunction* function = context->GetFunction(stackLevel);
+
+    std::string details;
+    details += " "s + function->GetModuleName();
+    details += " "s + sectionName;
+    details += " "s + function->GetDeclaration(true, true, false);
+    details += " "s + std::to_string(line) + "," + std::to_string(column);
+
+    return details.substr(1);
+}
+
+//
+
+std::string EWAN::Script::CurrentEventName_Call()
+{
+    as::asIScriptContext* context = as::asGetActiveContext();
+    if(!context)
+        return {};
+
+    return UserData::Get(context)->Event->Name;
+}
 
 void EWAN::Script::Yield_Call()
 {
@@ -480,9 +526,9 @@ as::asIScriptEngine* EWAN::Script::CreateEngine()
     static const std::unordered_map<as::asEEngineProp, as::asPWORD> properties = {
         {as::asEP_COMPILER_WARNINGS, 2}, // -Werror for scripts, woohoo!
         {as::asEP_DISALLOW_EMPTY_LIST_ELEMENTS, true},
-        {as::asEP_DISALLOW_GLOBAL_VARS, true},
         {as::asEP_OPTIMIZE_BYTECODE, true},
-        {as::asEP_REQUIRE_ENUM_SCOPE, true} //
+        {as::asEP_REQUIRE_ENUM_SCOPE, true}
+        //
     };
 
     for(const auto& property : properties)
@@ -503,7 +549,7 @@ as::asIScriptEngine* EWAN::Script::CreateEngine()
     engine->SetFunctionUserDataCleanupCallback(Callback::FunctionUserDataCleanup);
     engine->SetModuleUserDataCleanupCallback(Callback::ModuleUserDataCleanup);
 
-    engine->SetUserData(new UserData::Engine, 0);
+    engine->SetUserData(new UserData::Engine, UserData::IDX);
     UserData::Get(engine)->Script = this;
 
     return engine;
@@ -544,12 +590,22 @@ void EWAN::Script::DestroyEngine(as::asIScriptEngine*& engine)
 
 void EWAN::Script::CallbackContextLine([[maybe_unused]] as::asIScriptContext* context)
 {
-    [[maybe_unused]] int         line, column;
-    [[maybe_unused]] const char* sectionName;
+    // Need explicit check here, as callback is also used by internals
+    UserData::Function* functionData = UserData::Get(context->GetFunction());
+    if(!functionData)
+        return;
 
-    line = context->GetLineNumber(0, &column, &sectionName);
+#if 0
+    if(functionData->Debug)
+    {
+        std::string text = "?";
+        as::asIScriptFunction* systemFunction = context->GetSystemFunction();
+        if(systemFunction)
+            text = "! "s + systemFunction->GetDeclaration(true, true, true);
 
-    // context->GetEngine()->WriteMessage(sectionName, line, column, as::asMSGTYPE_INFORMATION, context->GetFunction()->GetDeclaration(true, true, true));
+        WriteInfo(context->GetEngine(), text, GetContextFunctionDetails(context));
+    }
+#endif
 }
 
 as::asIScriptContext* EWAN::Script::CallbackContextRequest(as::asIScriptEngine* engine, [[maybe_unused]] void* data)
@@ -570,7 +626,7 @@ as::asIScriptContext* EWAN::Script::CallbackContextRequest(as::asIScriptEngine* 
             return nullptr; // crash
         }
 
-        context->SetUserData(new UserData::Context, 0);
+        context->SetUserData(new UserData::Context, UserData::IDX);
     }
     else
     {
@@ -636,10 +692,10 @@ void EWAN::Script::CallbackMessage(const as::asSMessageInfo& msg)
         log += "[";
 
         if(!section.empty())
-            log += section + (numbers ? ":" : "");
+            log += section + (numbers ? " " : "");
 
         if(numbers)
-            log += std::to_string(msg.row) + ":" + std::to_string(msg.col);
+            log += std::to_string(msg.row) + "," + std::to_string(msg.col);
 
         log += "]";
     }
@@ -684,6 +740,8 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
             UserData::Module* moduleData = UserData::Get(module);
             if(!moduleData->Debug)
             {
+                // Pragmas cannot work on functions pointers, as module isn't built yet
+                // This will be applied by LoadModuleMetadata()
                 moduleData->Debug = true;
                 WriteInfo(engine, "Module setup : debug", module->GetName());
             }
@@ -742,4 +800,12 @@ int EWAN::Script::CallbackPragma(Builder& builder, const std::string& pragmaText
     }
 
     return 0;
+}
+
+namespace
+{
+    [[maybe_unused]] static void StaticAssert()
+    {
+        static_assert(EWAN::Script::UserData::IDX < 1000 || EWAN::Script::UserData::IDX > 1999);
+    }
 }

@@ -15,7 +15,7 @@ int EWAN::Script::Builder::StartNewModule(as::asIScriptEngine* inEngine, const c
     if(r < 0)
         return r;
 
-    module->SetUserData(new UserData::Module, 0);
+    module->SetUserData(new UserData::Module, UserData::IDX);
 
     return 0;
 }
