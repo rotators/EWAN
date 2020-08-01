@@ -8,7 +8,7 @@ updates:
   schedule:
    interval: "weekly"
    day:      "friday"
-  reviewers:
+  assignees:
   - "wipe2238"
 
 - package-ecosystem: "github-actions"
