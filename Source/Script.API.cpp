@@ -53,7 +53,7 @@ namespace
 
 /* static */ void EWAN::Script::API::AppLog(App*, std::string text)
 {
-    as::asIScriptContext*  context  = as::asGetActiveContext();
+    as::asIScriptContext* context = as::asGetActiveContext();
     if(!context)
         return;
 

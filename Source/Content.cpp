@@ -68,7 +68,6 @@ namespace
     static void* NewTexture()
     {
         return new sf::Texture;
-
     }
 
     static void DeleteTexture(void* data)

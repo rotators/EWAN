@@ -169,7 +169,7 @@ bool EWAN::Script::Event::Run(std::function<void(as::asIScriptContext* context)>
     }
 
     // Secondary run
-    // Suspended functions (if any) are resumed after 
+    // Suspended functions (if any) are resumed after
 
     while(!yield.empty())
     {
@@ -177,7 +177,7 @@ bool EWAN::Script::Event::Run(std::function<void(as::asIScriptContext* context)>
         yield.pop_front();
 
         as::asIScriptFunction* function = context->GetFunction();
-        as::asIScriptModule* module = function->GetModule();
+        as::asIScriptModule*   module   = function->GetModule();
 
         if(UserData::Get(function)->Debug)
             WriteInfo(module->GetEngine(), "Resume event : "s + function->GetDeclaration(true, true, true) + " = " + Name + ";", module->GetName());
@@ -255,7 +255,6 @@ bool EWAN::Script::Event::RunOnInit(as::asIScriptEngine* engine, as::asIScriptFu
     auto finish = [&falseFunction, &result](as::asIScriptContext* context) {
         if(!context->GetReturnByte())
         {
-
             falseFunction = context->GetFunction();
             result        = false;
         }

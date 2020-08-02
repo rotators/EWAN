@@ -21,11 +21,11 @@ namespace EWAN
         bool    Restart  = false;
         uint8_t Unused0[1];
 
-        EWAN::Content  Content;
-        EWAN::GameInfo GameInfo;
+        EWAN::Content       Content;
+        EWAN::GameInfo      GameInfo;
         sf::Event::KeyEvent Keyboard;
-        EWAN::Script   Script;
-        EWAN::Window   Window;
+        EWAN::Script        Script;
+        EWAN::Window        Window;
 
     public:
         App();

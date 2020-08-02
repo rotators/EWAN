@@ -197,7 +197,7 @@ namespace EWAN
         std::string GetContextFunctionDetails(as::asIScriptContext* context, as::asUINT stackLevel = 0);
 
         std::string CurrentEventName_Call();
-        void Yield_Call();
+        void        Yield_Call();
 
     protected:
         bool                 BindImportedFunctions(as::asIScriptEngine* engine);

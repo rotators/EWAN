@@ -43,7 +43,6 @@ EWAN::Script::Script() :
     AllEvents.push_back(&OnDraw);
     AllEvents.push_back(&OnKeyDown);
     AllEvents.push_back(&OnKeyUp);
-
 }
 
 EWAN::Script::~Script()
@@ -352,10 +351,10 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
 
     if(UserData::Get(module)->Debug) // #pragma module debug
     {
-        for(as::asUINT f=0, fLen = module->GetFunctionCount(); f < fLen; f++)
+        for(as::asUINT f = 0, fLen = module->GetFunctionCount(); f < fLen; f++)
         {
             as::asIScriptFunction* function = module->GetFunctionByIndex(f);
-            UserData::Get(function)->Debug = true;
+            UserData::Get(function)->Debug  = true;
         }
     }
 
@@ -412,11 +411,10 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
 
 std::string EWAN::Script::GetContextFunctionDetails(as::asIScriptContext* context, as::asUINT stackLevel /*= 0 */)
 {
-
     int         line, column;
     const char* sectionName;
 
-    line = context->GetLineNumber(stackLevel, &column, &sectionName);
+    line                            = context->GetLineNumber(stackLevel, &column, &sectionName);
     as::asIScriptFunction* function = context->GetFunction(stackLevel);
 
     std::string details;

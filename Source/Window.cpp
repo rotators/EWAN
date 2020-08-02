@@ -112,7 +112,7 @@ void EWAN::Window::Update(App* app)
             if(event.key.control && event.key.code == sf::Keyboard::Key::C)
             {
                 Log::Raw("Event : Keypressed : Control+C");
-                app->Quit = true;
+                app->Quit    = true;
                 app->Restart = false;
             }
         }
