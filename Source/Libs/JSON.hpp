@@ -29,12 +29,6 @@ namespace EWAN
         virtual bool     FromJSON(const nl::json& json) = 0;
 
         template<typename T>
-        void FromJSON(const nl::json& json, const char* key, T& target, bool optional = false)
-        {
-            JSON::FromJSON(json, std::string(key), target, optional);
-        }
-
-        template<typename T>
         void FromJSON(const nl::json& json, const std::string& key, T& target, bool optional = false)
         {
             nl::json::json_pointer ptr(key);

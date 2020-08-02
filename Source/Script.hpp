@@ -8,6 +8,7 @@
 #include <functional>
 #include <list>
 #include <map>
+#include <queue>
 #include <string>
 #include <utility> // std::forward
 
@@ -27,7 +28,7 @@ namespace EWAN
         class API
         {
         public:
-            static bool Init(App* app, as::asIScriptEngine* engine, const std::string& ns = "EWAN");
+            static bool Init(App* app, as::asIScriptEngine* engine, const std::string& namespace_);
             static bool InitEngineCallback(Script* script, as::asIScriptEngine* engine);
             static bool InitContextCallback(Script* script, as::asIScriptContext* context);
 
@@ -102,7 +103,7 @@ namespace EWAN
 
         protected:
             bool Run(std::function<void(as::asIScriptContext* context)> init, std::function<void(as::asIScriptContext* context)> finish);
-            bool Execute(as::asIScriptContext*& context, std::list<as::asIScriptContext*>& yield, std::function<void(as::asIScriptContext* context)> finish);
+            bool Execute(as::asIScriptContext*& context, std::queue<as::asIScriptContext*>& yield, std::function<void(as::asIScriptContext* context)> finish);
 
         public:
             bool RunOnBuild(as::asIScriptModule* module);
@@ -187,17 +188,17 @@ namespace EWAN
         static void WriteError(as::asIScriptEngine* engine, const std::string& message, const std::string& section = {}, int row = 0, int col = 0);
 
         bool LoadModule(as::asIScriptEngine* engine, const std::string& fileName, const std::string& moduleName);
-        bool LoadModule_Call(const std::string& fileName, const std::string& moduleName);
+        bool LoadModule_ScriptCall(const std::string& fileName, const std::string& moduleName);
         bool LoadInitModule(const GameInfo& game, as::asIScriptEngine* engine);
         bool UnloadModule(as::asIScriptModule*& module);
-        bool UnloadModule_Call(const std::string& moduleName);
+        bool UnloadModule_ScriptCall(const std::string& moduleName);
 
         bool LoadModuleMetadata(Builder& builder);
 
         std::string GetContextFunctionDetails(as::asIScriptContext* context, as::asUINT stackLevel = 0);
 
-        std::string CurrentEventName_Call();
-        void        Yield_Call();
+        std::string CurrentEventName_ScriptCall();
+        void        Yield_ScriptCall();
 
     protected:
         bool                 BindImportedFunctions(as::asIScriptEngine* engine);

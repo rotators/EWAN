@@ -55,14 +55,8 @@ std::string EWAN::Script::Event::GetDeclaration(as::asIScriptFunction* function)
     return GetDeclaration(name);
 }
 
-//
-// Script::Event
-//
-
 void EWAN::Script::Event::Register(as::asIScriptFunction* function)
 {
-    // TODO Script::Event::Register() search for duplicates
-
     if(UserData::Get(function)->Debug)
         WriteInfo(function->GetEngine(), "Registered event callback : "s + function->GetDeclaration(true, true, true) + " = " + Name + ";", function->GetModuleName());
 
@@ -129,10 +123,10 @@ bool EWAN::Script::Event::Run(std::function<void(as::asIScriptContext* context)>
     if(Functions.empty())
         return true;
 
-    // In perfect scenario, only one context is used for N function calls
+    // In perfect scenario, only one context is used for N functions
     as::asIScriptContext* context = nullptr;
 
-    std::list<as::asIScriptContext*> yield;
+    std::queue<as::asIScriptContext*> yield;
 
     // Primary run
     // Call functions which has been previously registered as event callbacks; if suspended, move them to secondary run block
@@ -169,12 +163,12 @@ bool EWAN::Script::Event::Run(std::function<void(as::asIScriptContext* context)>
     }
 
     // Secondary run
-    // Suspended functions (if any) are resumed after
+    // Call suspended functions (if any) in a loop, until there's none left; allows scripts to suspend functions indefinitely
 
     while(!yield.empty())
     {
         context = yield.front();
-        yield.pop_front();
+        yield.pop();
 
         as::asIScriptFunction* function = context->GetFunction();
         as::asIScriptModule*   module   = function->GetModule();
@@ -190,7 +184,7 @@ bool EWAN::Script::Event::Run(std::function<void(as::asIScriptContext* context)>
     return true;
 }
 
-bool EWAN::Script::Event::Execute(as::asIScriptContext*& context, std::list<as::asIScriptContext*>& yield, std::function<void(as::asIScriptContext* context)> finish)
+bool EWAN::Script::Event::Execute(as::asIScriptContext*& context, std::queue<as::asIScriptContext*>& yield, std::function<void(as::asIScriptContext* context)> finish)
 {
     const int  r     = context->Execute();
     const bool debug = UserData::Get(context->GetFunction())->Debug;
@@ -209,8 +203,9 @@ bool EWAN::Script::Event::Execute(as::asIScriptContext*& context, std::list<as::
             if(debug)
                 WriteInfo(context->GetEngine(), "Suspend event : "s + context->GetFunction()->GetDeclaration(true, true, true) + " = " + Name + ";", context->GetFunction()->GetModuleName());
 
+            // Move context to suspended functions container; as it holds function state it cannot be reused (obviously)
             contextData->SuspendReason = SuspendReason::Unknown;
-            yield.push_back(context);
+            yield.push(context);
             context = nullptr;
         }
         else
@@ -222,6 +217,8 @@ bool EWAN::Script::Event::Execute(as::asIScriptContext*& context, std::list<as::
     {
         WriteError(context->GetEngine(), "Cannot execute event : "s + context->GetFunction()->GetDeclaration(true, true, true) + " = " + Name + ";");
         WriteError(context->GetEngine(), "Cannot execute event : Execute() = "s + std::to_string(r));
+
+        // Do not reuse context which didn't finish properly
         context->Release();
         context = nullptr;
         return false;

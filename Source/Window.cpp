@@ -42,7 +42,7 @@ void EWAN::Window::Finish()
 
 //
 
-void EWAN::Window::Open_Call(sf::Uint32 width /*= 0 */, sf::Uint32 height /*= 0 */, sf::Uint32 bitsPerPixel /*= 0 */, const std::string& title /*= {} */, sf::Uint32 style /*= sf::Style::Default */)
+void EWAN::Window::Open(sf::Uint32 width /*= 0 */, sf::Uint32 height /*= 0 */, sf::Uint32 bitsPerPixel /*= 0 */, const std::string& title /*= {} */, sf::Uint32 style /*= sf::Style::Default */)
 {
     sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
 

@@ -15,6 +15,7 @@ namespace EWAN
         std::string Name;
         std::string Type;
         std::string ScriptInit;
+        std::string ScriptNamespace;
 
     public:
         bool Init(const std::string& path = ".", const std::string& id = {});

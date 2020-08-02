@@ -7,33 +7,17 @@
 
 #include "Libs/SFML.hpp"
 
-#include <type_traits> // std::is_same
-
-//#define SCRIPT_REGISTRATION_CHECK
+#include <type_traits> // std::is_same_v
 
 using namespace std::literals::string_literals;
 
 namespace
 {
-#if !defined(SCRIPT_REGISTRATION_CHECK)
-
-    static inline void _(int& ok, int r)
+    static inline void _(int& ok, int result)
     {
-        if(ok >= 0)
-            ok = (r >= 0) ? 0 : -1;
+        if(ok == 0 && result < 0)
+            ok = -1;
     }
-
-#else
-
-    #define _(ok, expr)                                        \
-        if(ok >= 0)                                            \
-        {                                                      \
-            int r = expr;                                      \
-            Log::Raw(""s + #expr + " = " + std::to_string(r)); \
-            ok = r >= 0;                                       \
-        }
-
-#endif
 
     template<typename T>
     std::string TypenameToString()
@@ -60,12 +44,16 @@ namespace
     WriteInfo(context->GetEngine(), text, UserData::Get(context->GetEngine())->Script->GetContextFunctionDetails(context));
 }
 
-/* static */ bool EWAN::Script::API::Init(App* app, as::asIScriptEngine* engine, const std::string& ns /*= "EWAN" */)
+/* static */ bool EWAN::Script::API::Init(App* app, as::asIScriptEngine* engine, const std::string& namespace_)
 {
-    int ok = 0;
+    //
+    // Script API is jailed inside "root namespace" to avoid global scope pollution
+    // Global functions are not used, and there's only one global variable which serves as a communication channel with engine
+    //
+    // Vanilla addons are excluded from this restrictions, and are registered in global scope
+    //
 
-    if(Text::IsBlank(ns))
-        return false;
+    int ok = 0;
 
     // Register vanilla addons
 
@@ -73,20 +61,14 @@ namespace
     RegisterStdString(engine);
     RegisterStdStringUtils(engine);
 
-    //
-
-    _(ok, engine->SetDefaultNamespace(ns.c_str()));
+    _(ok, engine->SetDefaultNamespace(namespace_.c_str()));
 
     //
 
     if constexpr(sizeof(size_t) == 4)
-    {
         _(ok, engine->RegisterTypedef("size_t", "uint32"));
-    }
     else
-    {
         _(ok, engine->RegisterTypedef("size_t", "uint64"));
-    }
 
     // Forward declarations
 
@@ -281,11 +263,11 @@ namespace
 
     _(ok, engine->RegisterObjectProperty("Script", "const string RootDirectory", asOFFSET(Script, RootDirectory)));
 
-    _(ok, engine->RegisterObjectMethod("Script", "string get_CurrentEventName() const property", as::asMETHOD(Script, CurrentEventName_Call), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Script", "string get_CurrentEventName() const property", as::asMETHOD(Script, CurrentEventName_ScriptCall), as::asCALL_THISCALL));
 
-    _(ok, engine->RegisterObjectMethod("Script", "bool LoadModule(string&in fileName, string&in moduleName) const", as::asMETHOD(Script, LoadModule_Call), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod("Script", "bool UnloadModule(string&in moduleName) const", as::asMETHOD(Script, UnloadModule_Call), as::asCALL_THISCALL));
-    _(ok, engine->RegisterObjectMethod("Script", "void Yield() const", as::asMETHOD(Script, Yield_Call), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Script", "bool LoadModule(string&in fileName, string&in moduleName) const", as::asMETHOD(Script, LoadModule_ScriptCall), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Script", "bool UnloadModule(string&in moduleName) const", as::asMETHOD(Script, UnloadModule_ScriptCall), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Script", "void Yield() const", as::asMETHOD(Script, Yield_ScriptCall), as::asCALL_THISCALL));
 
     //
 
@@ -310,7 +292,7 @@ namespace
 
     _(ok, engine->RegisterObjectMethod("Window", "bool get_IsOpen() property", as::asMETHOD(Window, isOpen), as::asCALL_THISCALL)); // SFML
 
-    _(ok, engine->RegisterObjectMethod("Window", "void Open(uint32 width = 0, uint32 height = 0, uint8 bitsPerPixel = 32, string&in title = \"\", uint32 style = WindowStyle::Default)", as::asMETHOD(Window, Open_Call), as::asCALL_THISCALL));
+    _(ok, engine->RegisterObjectMethod("Window", "void Open(uint32 width = 0, uint32 height = 0, uint8 bitsPerPixel = 32, string&in title = \"\", uint32 style = WindowStyle::Default)", as::asMETHOD(Window, Open), as::asCALL_THISCALL));
     _(ok, engine->RegisterObjectMethod("Window", "void Close()", as::asMETHOD(Window, close), as::asCALL_THISCALL)); // SFML
     _(ok, engine->RegisterObjectMethod("Window", "bool Draw(Sprite@ sprite)", as::asMETHODPR(Window, Draw, (sf::Sprite*), bool), as::asCALL_THISCALL));
     _(ok, engine->RegisterObjectMethod("Window", "bool Draw(const Content&in content, string&in spriteId)", as::asMETHODPR(Window, Draw, (const Content&, const std::string&), bool), as::asCALL_THISCALL));
@@ -328,7 +310,7 @@ namespace
 
     _(ok, engine->SetDefaultNamespace(""));
 
-    _(ok, engine->RegisterGlobalProperty(Text::Join(std::vector<std::string> {ns, "::App App"}, "").c_str(), app));
+    _(ok, engine->RegisterGlobalProperty(Text::Replace("?::App App", "?", namespace_).c_str(), app));
 
     return ok >= 0;
 }

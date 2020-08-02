@@ -19,11 +19,15 @@ EWAN::Script::Script() :
     // Event name defines what kind of metadata script function need to have to become event callback
     // Function declaration is stored as string list, which holds return type and function parameters
     //
+    // Event name must start with "On"
+    // Function declaration must use `?` character instead of root namespace name
+    //
     // Event constructor                                  Script code
-    // ------------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------
     // Event("OnExample", {"void"}) ..................... [OnExample] void  f();
     // Event("OnHappens", {"bool"}) ..................... [OnHappens] bool  f();
     // Event("OnTrigger", {"float", "string", "int"}) ... [OnTrigger] float f(string, int);
+    // Event("OnTragedy", {"void", "?::Thing"}) ......... [OnTragedy] void f(RootNamespace::Thing);
     //
     // Note that single function can handle any amount of engine events (as long their signatures are compatibile)
     //
@@ -32,11 +36,10 @@ EWAN::Script::Script() :
     OnInit("OnInit", {"bool"}),
     OnFinish("OnFinish", {"void"}),
     OnDraw("OnDraw", {"void"}),
-    // TODO allow engine's script namespace customization
-    OnKeyDown("OnKeyDown", {"void", "const EWAN::Key"}),
-    OnKeyUp("OnKeyUp", {"void", "const EWAN::Key"})
+    OnKeyDown("OnKeyDown", {"void", "const ?::Key"}),
+    OnKeyUp("OnKeyUp", {"void", "const ?::Key"})
 {
-    // Cache all events
+    // Cache all events in single container, for easier mass-processing
     AllEvents.push_back(&OnBuild);
     AllEvents.push_back(&OnInit);
     AllEvents.push_back(&OnFinish);
@@ -52,12 +55,28 @@ EWAN::Script::~Script()
 
 bool EWAN::Script::Init(App* app)
 {
+    static const std::string fail = "Script initialization failed... ";
+
     RootDirectory = std::filesystem::path(app->GameInfo.Path).replace_filename(app->GameInfo.ScriptInit).remove_filename().make_preferred().string();
 
+    // Make sure root namespace is set to non-blank value, leaving detailed check to AngelScript during API registration
+
+    if(app->GameInfo.ScriptNamespace.empty())
+        app->GameInfo.ScriptNamespace = "EWAN";
+
+    if(Text::IsBlank(app->GameInfo.ScriptNamespace))
+    {
+        Log::PrintError(fail + "root namespace is blank");
+        return false;
+    }
+
+    // Display basic info about script system
+
     Log::PrintInfo("Script root directory...  " + RootDirectory);
+    Log::PrintInfo("Script root namespace...  " + app->GameInfo.ScriptNamespace);
     Log::PrintInfo("Script initialization...  AngelScript v"s + as::asGetLibraryVersion() + as::asGetLibraryOptions());
 
-    const std::string fail = "Script initialization failed... ";
+    // API registration
 
     as::asIScriptEngine* engine = CreateEngine();
     if(!engine)
@@ -66,11 +85,22 @@ bool EWAN::Script::Init(App* app)
         return false;
     }
 
-    if(!API::Init(app, engine))
+    if(!API::Init(app, engine, app->GameInfo.ScriptNamespace))
     {
         WriteError(engine, fail + "cannot register API");
         DestroyEngine(engine);
         return false;
+    }
+
+    // Replace root namespace placeholder with real value
+
+    for(auto& event : AllEvents)
+    {
+        for(auto& param : event->Params)
+        {
+            // "?" might need to be replaced with something else in future
+            param = Text::Replace(param, "?", app->GameInfo.ScriptNamespace);
+        }
     }
 
     if(!LoadInitModule(app->GameInfo, engine))
@@ -196,7 +226,7 @@ bool EWAN::Script::LoadModule(as::asIScriptEngine* engine, const std::string& fi
     as::asIScriptModule* module = engine->GetModule(moduleName.c_str(), as::asGM_ONLY_IF_EXISTS);
     if(module)
     {
-        WriteError(engine, "Cannot load module (name already in use) : " + moduleName);
+        WriteError(engine, "Cannot load module (name already in use) : ", moduleName);
         return false;
     }
 
@@ -265,7 +295,7 @@ bool EWAN::Script::LoadModule(as::asIScriptEngine* engine, const std::string& fi
     return true;
 }
 
-bool EWAN::Script::LoadModule_Call(const std::string& fileName, const std::string& moduleName)
+bool EWAN::Script::LoadModule_ScriptCall(const std::string& fileName, const std::string& moduleName)
 {
     as::asIScriptContext* context = as::asGetActiveContext();
     if(!context)
@@ -299,7 +329,7 @@ bool EWAN::Script::UnloadModule(as::asIScriptModule*& module)
         {
             if(context->GetFunction(f)->GetModule() == module)
             {
-                WriteError(context->GetEngine(), "Cannot unload module (currently in use) : "s + module->GetName());
+                WriteError(context->GetEngine(), "Cannot unload module (currently in use)", module->GetName());
                 return false;
             }
         }
@@ -326,7 +356,7 @@ bool EWAN::Script::UnloadModule(as::asIScriptModule*& module)
     return true;
 }
 
-bool EWAN::Script::UnloadModule_Call(const std::string& moduleName)
+bool EWAN::Script::UnloadModule_ScriptCall(const std::string& moduleName)
 {
     as::asIScriptContext* context = as::asGetActiveContext();
     if(!context)
@@ -344,6 +374,8 @@ bool EWAN::Script::UnloadModule_Call(const std::string& moduleName)
 
 bool EWAN::Script::LoadModuleMetadata(Builder& builder)
 {
+    bool result = true;
+
     as::asIScriptEngine* engine = builder.GetEngine();
     as::asIScriptModule* module = builder.GetModule();
 
@@ -396,7 +428,8 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
                 if(function != sameFunction)
                 {
                     WriteError(engine, "Invalid function signature for event : " + event->Name + "\nExpected:\n  " + expectedDeclaration + ";\nFound:\n  " + function->GetDeclaration(true, true, false) + ";", module->GetName());
-                    return false;
+                    result = false;
+                    continue;
                 }
 
                 event->Register(function);
@@ -404,7 +437,7 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
         }
     }
 
-    return true;
+    return result;
 }
 
 //
@@ -428,7 +461,7 @@ std::string EWAN::Script::GetContextFunctionDetails(as::asIScriptContext* contex
 
 //
 
-std::string EWAN::Script::CurrentEventName_Call()
+std::string EWAN::Script::CurrentEventName_ScriptCall()
 {
     as::asIScriptContext* context = as::asGetActiveContext();
     if(!context)
@@ -437,7 +470,7 @@ std::string EWAN::Script::CurrentEventName_Call()
     return UserData::Get(context)->Event->Name;
 }
 
-void EWAN::Script::Yield_Call()
+void EWAN::Script::Yield_ScriptCall()
 {
     as::asIScriptContext* context = as::asGetActiveContext();
     if(!context)
@@ -590,20 +623,18 @@ void EWAN::Script::CallbackContextLine([[maybe_unused]] as::asIScriptContext* co
 {
     // Need explicit check here, as callback is also used by internals
     UserData::Function* functionData = UserData::Get(context->GetFunction());
-    if(!functionData)
-        return;
 
-#if 0
-    if(functionData->Debug)
+    if(functionData && functionData->Debug)
     {
+#if 0
         std::string text = "?";
         as::asIScriptFunction* systemFunction = context->GetSystemFunction();
         if(systemFunction)
             text = "! "s + systemFunction->GetDeclaration(true, true, true);
 
         WriteInfo(context->GetEngine(), text, GetContextFunctionDetails(context));
-    }
 #endif
+    }
 }
 
 as::asIScriptContext* EWAN::Script::CallbackContextRequest(as::asIScriptEngine* engine, [[maybe_unused]] void* data)

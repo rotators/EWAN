@@ -9,7 +9,10 @@ static const EWAN::JSON::Schema GameInfoSchema = {
     {"/name", "string"},
     {"/type?", "string?"},
     {"/script", "object"},
-    {"/script/init", "string"}};
+    {"/script/init", "string"},
+    {"/script/namespace?", "string"}
+    //
+};
 
 bool EWAN::GameInfo::Init(const std::string& path /*= "." */, const std::string& id /*= {}*/)
 {
@@ -94,6 +97,7 @@ void EWAN::GameInfo::Clear(bool full /*= false */)
     Name.clear();
     Type.clear();
     ScriptInit.clear();
+    ScriptNamespace.clear();
 }
 
 nl::json EWAN::GameInfo::ToJSON()
@@ -102,7 +106,12 @@ nl::json EWAN::GameInfo::ToJSON()
         {"name", Name},
         {"type", Type},
         {"script",
-         {"init", ScriptInit}}};
+         {"init", ScriptInit},
+         {"namespace", ScriptNamespace}
+         //
+        }
+        //
+    };
 
     return json;
 }
@@ -117,6 +126,7 @@ bool EWAN::GameInfo::FromJSON(const nl::json& json)
     JSON::FromJSON(json, "/name", Name);
     JSON::FromJSON(json, "/type", Type, true);
     JSON::FromJSON(json, "/script/init", ScriptInit);
+    JSON::FromJSON(json, "/script/namespace", ScriptNamespace, true);
 
     return true;
 }
