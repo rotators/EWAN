@@ -105,10 +105,11 @@ nl::json EWAN::GameInfo::ToJSON()
     nl::json json = {
         {"name", Name},
         {"type", Type},
-        {"script",
-         {"init", ScriptInit},
-         {"namespace", ScriptNamespace}
-         //
+        {
+            "script",
+            {"init", ScriptInit},
+            {"namespace", ScriptNamespace}
+            //
         }
         //
     };
