@@ -261,6 +261,15 @@ namespace
 
     //
 
+    _(ok, engine->RegisterEnum("MouseButton"));
+    _(ok, engine->RegisterEnumValue("MouseButton", "Left", sf::Mouse::Left));
+    _(ok, engine->RegisterEnumValue("MouseButton", "Right", sf::Mouse::Right));
+    _(ok, engine->RegisterEnumValue("MouseButton", "Middle", sf::Mouse::Middle));
+    _(ok, engine->RegisterEnumValue("MouseButton", "XButton1", sf::Mouse::XButton1));
+    _(ok, engine->RegisterEnumValue("MouseButton", "XButton2", sf::Mouse::XButton2));
+
+    //
+
     _(ok, engine->RegisterObjectProperty("Script", "const string RootDirectory", asOFFSET(Script, RootDirectory)));
 
     _(ok, engine->RegisterObjectMethod("Script", "string get_CurrentEventName() const property", as::asMETHOD(Script, CurrentEventName_ScriptCall), as::asCALL_THISCALL));

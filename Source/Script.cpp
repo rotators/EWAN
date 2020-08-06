@@ -27,9 +27,9 @@ EWAN::Script::Script() :
     // Event("OnExample", {"void"}) ..................... [OnExample] void  f();
     // Event("OnHappens", {"bool"}) ..................... [OnHappens] bool  f();
     // Event("OnTrigger", {"float", "string", "int"}) ... [OnTrigger] float f(string, int);
-    // Event("OnTragedy", {"void", "?::Thing"}) ......... [OnTragedy] void f(RootNamespace::Thing);
+    // Event("OnTragedy", {"void", "?::Thing"}) ......... [OnTragedy] void  f(RootNamespace::Thing);
     //
-    // Note that single function can handle any amount of engine events (as long their signatures are compatibile)
+    // Note that single script function can handle any amount of events (as long their signatures are compatibile)
     //
 
     OnBuild("OnBuild", {"void"}),
@@ -37,7 +37,10 @@ EWAN::Script::Script() :
     OnFinish("OnFinish", {"void"}),
     OnDraw("OnDraw", {"void"}),
     OnKeyDown("OnKeyDown", {"void", "const ?::Key"}),
-    OnKeyUp("OnKeyUp", {"void", "const ?::Key"})
+    OnKeyUp("OnKeyUp", {"void", "const ?::Key"}),
+    OnMouseDown("OnMouseDown", {"void", "const ?::MouseButton"}),
+    OnMouseUp("OnMouseUp", {"void", "const ?::MouseButton"}),
+    OnMouseMove("OnMouseMove", {"void", "const int32", "const int32"})
 {
     // Cache all events in single container, for easier mass-processing
     AllEvents.push_back(&OnBuild);
@@ -46,6 +49,9 @@ EWAN::Script::Script() :
     AllEvents.push_back(&OnDraw);
     AllEvents.push_back(&OnKeyDown);
     AllEvents.push_back(&OnKeyUp);
+    AllEvents.push_back(&OnMouseDown);
+    AllEvents.push_back(&OnMouseUp);
+    AllEvents.push_back(&OnMouseMove);
 }
 
 EWAN::Script::~Script()
@@ -94,7 +100,7 @@ bool EWAN::Script::Init(App* app)
 
     // Replace root namespace placeholder with real value
 
-    for(auto& event : AllEvents)
+    for(const auto& event : AllEvents)
     {
         for(auto& param : event->Params)
         {
@@ -103,14 +109,15 @@ bool EWAN::Script::Init(App* app)
         }
     }
 
+    // Load Init module; it is the only module loaded automagically by engine
+    // Scripts are responsible for loading other modules using provided App::Script::LoadModule() function
+
     if(!LoadInitModule(app->GameInfo, engine))
     {
         WriteError(engine, fail + "cannot load init module");
         DestroyEngine(engine);
         return false;
     }
-
-    /*/ At this point init module should request and finish building of any other modules /*/
 
     // There might be no modules loaded, if init module is marked as optional and cannot be built
     if(!engine->GetModuleCount())
@@ -275,7 +282,7 @@ bool EWAN::Script::LoadModule(as::asIScriptEngine* engine, const std::string& fi
         return optional;
     }
 
-    // All script functions must have UserData set
+    // All script functions must have user data set
     for(as::asUINT f = 0, fLen = module->GetFunctionCount(); f < fLen; f++)
     {
         module->GetFunctionByIndex(f)->SetUserData(new UserData::Function, UserData::IDX);
@@ -397,7 +404,7 @@ bool EWAN::Script::LoadModuleMetadata(Builder& builder)
         as::asIScriptFunction* function = engine->GetFunctionById(metadata.first);
 
         // Check [Debug *] metadata
-        // This should checked early, as other metadata might want to generate debug messages
+        // This should be checked early, as other metadata might want to generate debug messages
         for(const auto& metadataText : metadata.second)
         {
             std::vector<std::string> text = Text::Split(metadataText, ' ');
@@ -621,7 +628,7 @@ void EWAN::Script::DestroyEngine(as::asIScriptEngine*& engine)
 
 void EWAN::Script::CallbackContextLine([[maybe_unused]] as::asIScriptContext* context)
 {
-    // Need explicit check here, as callback is also used by internals
+    // Need explicit user data check here, as callback is also used by internal functions which doesn't have user data set
     UserData::Function* functionData = UserData::Get(context->GetFunction());
 
     if(functionData && functionData->Debug)

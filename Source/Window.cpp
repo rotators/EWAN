@@ -121,6 +121,18 @@ void EWAN::Window::Update(App* app)
             app->Keyboard = event.key;
             app->Script.OnKeyUp.Run(app->Keyboard.code);
         }
+        else if(event.type == sf::Event::MouseButtonPressed)
+        {
+            app->Script.OnMouseDown.Run(event.mouseButton.button);
+        }
+        else if(event.type == sf::Event::MouseButtonReleased)
+        {
+            app->Script.OnMouseUp.Run(event.mouseButton.button);
+        }
+        else if(event.type == sf::Event::MouseMoved)
+        {
+            app->Script.OnMouseMove.Run(event.mouseMove.x, event.mouseMove.y);
+        }
         else if(event.type == sf::Event::Resized)
         {
             sf::FloatRect visibleArea(0.0f, 0.0f, static_cast<float>(event.size.width), static_cast<float>(event.size.height));

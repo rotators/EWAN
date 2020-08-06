@@ -99,6 +99,7 @@ namespace EWAN
 
             bool Run();
             bool Run(const int32_t& arg0);
+            bool Run(const int32_t& arg0, const int32_t& arg1);
             bool RunBool(bool& result);
 
         protected:
@@ -134,6 +135,7 @@ namespace EWAN
             struct Function
             {
                 bool Debug = false;
+                bool DebugLine = false;
             };
 
             struct Module
@@ -169,6 +171,9 @@ namespace EWAN
         Event OnDraw;
         Event OnKeyDown;
         Event OnKeyUp;
+        Event OnMouseDown;
+        Event OnMouseUp;
+        Event OnMouseMove;
 
     private:
         std::vector<Event*>  AllEvents;

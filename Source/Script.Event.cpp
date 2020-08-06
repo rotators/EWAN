@@ -106,6 +106,19 @@ bool EWAN::Script::Event::Run(const int32_t& arg0)
     return Run(init, NOP);
 }
 
+bool EWAN::Script::Event::Run(const int32_t& arg0, const int32_t& arg1)
+{
+    if(Functions.empty())
+        return true;
+
+    auto init = [arg0, arg1](as::asIScriptContext* context) {
+        context->SetArgDWord(0, arg0);
+        context->SetArgDWord(1, arg1);
+    };
+
+    return Run(init, NOP);
+}
+
 bool EWAN::Script::Event::RunBool(bool& result)
 {
     if(Functions.empty())
