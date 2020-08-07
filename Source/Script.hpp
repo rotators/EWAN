@@ -134,7 +134,7 @@ namespace EWAN
 
             struct Function
             {
-                bool Debug = false;
+                bool Debug     = false;
                 bool DebugLine = false;
             };
 
