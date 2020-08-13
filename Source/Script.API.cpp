@@ -75,7 +75,7 @@ namespace
     static const std::vector<const char*> zeroObjRefNoHandle = {
         "App",
         "Content",
-        "ContentCache",
+        "ContentCache", // TODO Replace with ContentFont
         "ContentSprite",
         "ContentTexture",
         "GameInfo",
@@ -341,8 +341,6 @@ namespace
 
 /* static */ int EWAN::Script::API::RegisterContentCache(as::asIScriptEngine* engine, const std::string& type, const std::string& subtype /*= {} */)
 {
-    using namespace EWAN;
-
     int ok = 0;
 
     const std::string boolOrSubtype = (subtype.empty() ? "bool" : subtype);
