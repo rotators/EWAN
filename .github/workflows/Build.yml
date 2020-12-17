@@ -76,7 +76,7 @@ jobs:
           echo ::endgroup::
 
           echo ::group::Misc
-          sudo apt install libflac-dev:$arch libfreetype6-dev:$arch libopenal-dev:$arch libudev-dev:$arch libvorbis-dev:$arch libxrandr-dev:$arch
+          sudo apt install libflac-dev:$arch libfreetype6-dev:$arch libopenal-dev:$arch libudev-dev:$arch libvorbis-dev:$arch libxcursor-dev:$arch libxrandr-dev:$arch
           echo ::endgroup::
 
   - name: Clone
