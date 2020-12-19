@@ -25,7 +25,7 @@ jobs:
           if [ "$event" == "repository_dispatch" ]; then
              event="${event}:${{ github.event.action }}"
           fi
-          echo ::set-env name=GHA_EVENT::$event
+          echo GHA_EVENT=$event >> $GITHUB_ENV
 
   - name: Clone
     uses: actions/checkout@v2
@@ -42,7 +42,7 @@ jobs:
           if [ -f Source/.clang-format ]; then
              clang_format=$(grep "#!" Source/.clang-format | awk '{print $2}')
              if [ -n "${clang_format}" ]; then
-                echo ::set-env name=GHA_CLANG_FORMAT::${clang_format}
+                echo GHA_CLANG_FORMAT=${clang_format} >> $GITHUB_ENV
 
                 echo ::group::Install ${clang_format}
                 sudo apt install ${clang_format} 2>&1
@@ -70,7 +70,7 @@ jobs:
 
           if [ -f "$HOME/gha.commit" ]; then
              sed -i '1s!^!Progress every day\n!' $HOME/gha.commit
-             echo ::set-env name=GHA_COMMIT::true
+             echo GHA_COMMIT=true >> $GITHUB_ENV
              cat $HOME/gha.commit
           fi
 
